@@ -669,13 +669,24 @@ function sb_get_bible_books () {
 * @return array
 */
 function sb_get_sermons($filter, $order, $page = 1, $limit = 0, $hide_empty = false) {
-	global $wpdb, $record_count;
-	if ($limit == 0)
-		$limit = sb_get_option('sermons_per_page');
-	$wpdb->query('SET SQL_BIG_SELECTS=1');
-	$query = $wpdb->get_results(sb_create_multi_sermon_query($filter, $order, $page, $limit, $hide_empty));
-	$record_count = $wpdb->get_var("SELECT FOUND_ROWS()");
-	return $query;
+    global $wpdb, $record_count;
+
+    // Safe handling for "Sermons per page" option
+    $per_page_option = sb_get_option('sermons_per_page');
+    $per_page = (is_numeric($per_page_option) && $per_page_option > 0) ? (int)$per_page_option : 10;
+
+    if ($limit <= 0) {
+        $limit = $per_page;
+    } else {
+        $limit = (int)$limit;
+    }
+
+    $page = max(1, (int)$page);
+
+    $wpdb->query('SET SQL_BIG_SELECTS=1');
+    $query = $wpdb->get_results(sb_create_multi_sermon_query($filter, $order, $page, $limit, $hide_empty));
+    $record_count = $wpdb->get_var("SELECT FOUND_ROWS()");
+    return $query;
 }
 
 /**
