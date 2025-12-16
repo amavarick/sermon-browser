@@ -1238,7 +1238,6 @@ function sb_files() {
 		<?php
 	}
 }
-
 /**
 * Displays Sermons page
 */
@@ -1273,10 +1272,8 @@ function sb_manage_sermons() {
 		sb_delete_unused_tags();
 		echo '<div id="message" class="updated fade"><p><b>'.__('Sermon removed from database.', 'sermon-browser').'</b></div>';
 	}
-
 	$cnt = $wpdb->get_row("SELECT COUNT(*) FROM {$wpdb->prefix}sb_sermons", ARRAY_A);
 	$cnt = $cnt['COUNT(*)'];
-
 	$sermons = $wpdb->get_results("SELECT m.id, m.title, m.datetime, p.name as pname, s.name as sname, ss.name as ssname
 		FROM {$wpdb->prefix}sb_sermons as m
 		LEFT JOIN {$wpdb->prefix}sb_preachers as p ON m.preacher_id = p.id
@@ -1359,7 +1356,6 @@ function sb_manage_sermons() {
 						<td><?php echo stripslashes($sermon->title) ?></td>
 						<td><?php echo stripslashes($sermon->pname) ?></td>
 						<td><?php echo ($sermon->datetime == '1970-01-01 00:00:00') ? __('Unknown', 'sermon-browser') : date_i18n('d M y', strtotime($sermon->datetime)); ?></td>
-						//replaced deprecated strftime() function with date_i18n
 						<td><?php echo stripslashes($sermon->sname) ?></td>
 						<td><?php echo stripslashes($sermon->ssname) ?></td>
 						<td><?php echo sb_sermon_stats($sermon->id) ?></td>
