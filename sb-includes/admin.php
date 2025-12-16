@@ -2603,39 +2603,37 @@ function sb_print_upload_form () {
 </table>
 <?php }
 
-function sb_add_contextual_help($help) {
-	if (!isset($_GET['page']))
-		{return $help;}
-	else {
-		$out = '<h5>'.__('SermonBrowser Help', 'sermon-browser')."</h5>\n";
-		$out .= '<div class="metabox-prefs"><p>';
-		switch ($_GET['page']) {
-			case 'sermon-browser/sermon.php':
-				$out .= __('From this page you can edit or delete any of your sermons. The most recent sermons are found at the top. Use the filter options to quickly find the one you want.', 'sermon-browser');
-				break;
-			case 'sermon-browser/new_sermon.php':
-			case 'sermon-browser/files.php':
-			case 'sermon-browser/preachers.php':
-			case 'sermon-browser/manage.php':
-			case 'sermon-browser/options.php':
-				$out .= __('It&#146;s important that these options are set correctly, as otherwise SermonBrowser won&#146;t behave as you expect.', 'sermon-browser').'<ul>';
-				$out .= '<li>'.__('The upload folder would normally be <b>wp-content/uploads/sermons</b>', 'sermon-browser').'</li>';
-				$out .= '<li>'.__('You should only change the public podcast feed if you re-direct your podcast using a service like Feedburner. Otherwise it should be the same as the private podcast feed.', 'sermon-browser').'</li>';
-				$out .= '<li>'.__('The MP3 shortcode you need will be in the documation of your favourite MP3 plugin. Use the tag %SERMONURL% in place of the URL of the MP3 file (e.g. [haiku url="%SERMONURL%"] or [audio:%SERMONURL%]).', 'sermon-browser').'</li></ul>';
-				break;
-			case 'sermon-browser/templates.php':
-				$out .= sprintf(__('Template editing is one of the most powerful features of SermonBrowser. Be sure to look at the complete list of %stemplate tags%s.', 'sermon-browser'), '<a href="http://www.sermonbrowser.com/customisation/">', '</a>');
-				break;
-			case 'sermon-browser/uninstall.php':
-			case 'sermon-browser/help.php':
-		}
-	}
-	$out.= '</p><p><a href="http://www.sermonbrowser.com/tutorials/">'.__('Tutorial Screencasts').'</a>';
-	$out.= ' | <a href="http://www.sermonbrowser.com/faq/">'.__('Frequently Asked Questions').'</a>';
-	$out.= ' | <a href="http://www.sermonbrowser.com/forum/">'.__('Support Forum').'</a>';
-	$out.= ' | <a href="http://www.sermonbrowser.com/customisation/">'.__('Shortcode syntax').'</a>';
-	$out.= ' | <a href="http://www.sermonbrowser.com/donate/">'.__('Donate').'</a>';
-	$out.= '</p></div>';
-	return $out;
+/**
+ * Modern contextual help using WordPress Help Tabs API (replaces deprecated contextual_help filter)
+ */
+function sb_add_contextual_help() {
+    $screen = get_current_screen();
+
+    // Only add help on Sermon Browser admin pages
+    if (!$screen || strpos($screen->id, 'sermon-browser') === false) {
+        return;
+    }
+
+    $help_content = '<p>' . __('Welcome to Sermon Browser! Here are some helpful links:', 'sermon-browser') . '</p>';
+    $help_content .= '<ul>';
+    $help_content .= '<li><a href="http://www.sermonbrowser.com/tutorials/" target="_blank">' . __('Tutorial Screencasts', 'sermon-browser') . '</a></li>';
+    $help_content .= '<li><a href="http://www.sermonbrowser.com/faq/" target="_blank">' . __('Frequently Asked Questions', 'sermon-browser') . '</a></li>';
+    $help_content .= '<li><a href="http://www.sermonbrowser.com/forum/" target="_blank">' . __('Support Forum', 'sermon-browser') . '</a></li>';
+    $help_content .= '<li><a href="http://www.sermonbrowser.com/customisation/" target="_blank">' . __('Template tags and shortcode', 'sermon-browser') . '</a></li>';
+    $help_content .= '</ul>';
+
+    $screen->add_help_tab(array(
+        'id'      => 'sb-help-overview',
+        'title'   => __('Sermon Browser Help', 'sermon-browser'),
+        'content' => $help_content,
+    ));
+
+    // Optional sidebar with links
+    $screen->set_help_sidebar(
+        '<p><strong>' . __('More Resources', 'sermon-browser') . '</strong></p>' .
+        '<p><a href="http://www.sermonbrowser.com/" target="_blank">' . __('Official Website', 'sermon-browser') . '</a></p>' .
+        '<p><a href="http://www.sermonbrowser.com/donate/" target="_blank">' . __('Donate', 'sermon-browser') . '</a></p>'
+    );
 }
+add_action('current_screen', 'sb_add_contextual_help');
 ?>
