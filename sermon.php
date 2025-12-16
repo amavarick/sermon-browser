@@ -219,7 +219,8 @@ function sb_sermon_init () {
 		add_action ('admin_menu', 'sb_add_pages');
 		add_action ('rightnow_end', 'sb_rightnow');
 		add_action('admin_init', 'sb_add_admin_headers');
-		add_filter('contextual_help', 'sb_add_contextual_help');
+		// Removed deprecated contextual_help filter (WP 3.3+)
+		//add_filter('contextual_help', 'sb_add_contextual_help');
 		if (defined('SAVEQUERIES') && SAVEQUERIES)
 			add_action('admin_footer', 'sb_footer_stats');
 	}
