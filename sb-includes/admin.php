@@ -1358,7 +1358,8 @@ function sb_manage_sermons() {
 						<th style="text-align:center" scope="row"><?php echo $sermon->id ?></th>
 						<td><?php echo stripslashes($sermon->title) ?></td>
 						<td><?php echo stripslashes($sermon->pname) ?></td>
-						<td><?php echo ($sermon->datetime == '1970-01-01 00:00:00') ? __('Unknown', 'sermon-browser') : strftime('%d %b %y', strtotime($sermon->datetime)); ?></td>
+						<td><?php echo ($sermon->datetime == '1970-01-01 00:00:00') ? __('Unknown', 'sermon-browser') : date_i18n('d M y', strtotime($sermon->datetime)); ?></td>
+						//replaced deprecated strftime() function with date_i18n
 						<td><?php echo stripslashes($sermon->sname) ?></td>
 						<td><?php echo stripslashes($sermon->ssname) ?></td>
 						<td><?php echo sb_sermon_stats($sermon->id) ?></td>
