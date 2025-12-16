@@ -276,7 +276,7 @@ function sb_widget_popular ($args) {
 	$jscript .= 'if (jQuery.getSbCookie() == "preachers") { jQuery("#popular_preachers_trigger'.$suffix.'").attr("style", "font-weight:bold"); jQuery("#sb_popular_wrapper'.$suffix.'").html("'.addslashes($output['preachers']).'")};';
 	$jscript .= 'if (jQuery.getSbCookie() == "series") { jQuery("#popular_series_trigger'.$suffix.'").attr("style", "font-weight:bold"); jQuery("#sb_popular_wrapper'.$suffix.'").html("'.addslashes($output['series']).'")};';
 	$jscript .= 'if (jQuery.getSbCookie() == "sermons") { jQuery("#popular_sermons_trigger'.$suffix.'").attr("style", "font-weight:bold"); jQuery("#sb_popular_wrapper'.$suffix.'").html("'.addslashes($output['sermons']).'")};';
-	echo '<p>'.implode ($trigger, ' | ').'</p>';
+	echo '<p>'.implode(' | ', $trigger).'</p>';
 	echo '<div id="sb_popular_wrapper'.$suffix.'">'.current($output).'</div>';
 	echo '<script type="text/javascript">jQuery.setSbCookie = function (value) {
 											document.cookie = "sb_popular="+encodeURIComponent(value);
@@ -569,13 +569,14 @@ function sb_get_tag_link($tag) {
 
 // Prints tags
 function sb_print_tags($tags) {
-	$out = array();
-	foreach ((array) $tags as $tag) {
-		$tag = stripslashes($tag);
-		$out[] = '<a href="'.sb_get_tag_link($tag).'">'.$tag.'</a>';
-	}
-	$tags = implode(', ', (array) $out);
-	echo $tags;
+    $out = array();
+    foreach ((array) $tags as $tag) {
+        $tag = stripslashes($tag);
+        $out[] = '<a href="'.sb_get_tag_link($tag).'">'.$tag.'</a>';
+    }
+    // Fixed: glue string first, array second
+    $tags = implode(', ', $out);
+    echo $tags;
 }
 
 //Prints tag cloud
