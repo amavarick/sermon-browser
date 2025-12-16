@@ -253,15 +253,28 @@ function sb_add_pages() {
 * @return integer
 */
 function sb_return_kbytes($val) {
-	$val = trim($val);
-	$last = strtolower($val[strlen($val)-1]);
-	switch($last) {
-		case 'g':
-			$val *= 1024;
-		case 'm':
-			$val *= 1024;
-	}
-   return intval($val);
+    $val = trim($val);
+
+    if ($val === '') {
+        return 0;
+    }
+
+    $last = strtolower(substr($val, -1));
+    $num  = (int) $val; // extract numeric part safely
+
+    switch ($last) {
+        case 'g':
+            $num *= 1024;
+            // intentional fall-through
+        case 'm':
+            $num *= 1024;
+            break;
+        case 'k':
+            // already in kilobytes
+            break;
+    }
+
+    return $num;
 }
 
 /**
