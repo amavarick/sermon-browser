@@ -726,7 +726,7 @@ function sb_print_sameday_sermon_link($sermon) {
 	$output = array();
 	foreach ($same as $cur)
 		$output[] = '<a href="'.sb_print_sermon_link($cur, false).'">'.stripslashes($cur->title).'</a>';
-	echo implode(', ', $output);
+	echo implode($output, ', ');
 }
 
 //Gets single sermon from the database
