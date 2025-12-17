@@ -142,8 +142,14 @@ function sb_install() {
 	sb_update_option('single_template', sb_default_single_template());
 	sb_update_option('css_style', sb_default_css());
 	sb_update_option('style_date_modified', strtotime('now'));
-	sb_update_option('search_output', strtr(sb_default_multi_template(), sb_search_results_dictionary()));
-	sb_update_option('single_output', strtr(sb_default_single_template(), sb_sermon_page_dictionary()));
+	// Fix PHP 8 implode warning in default templates
+	$single_tpl = strtr(sb_default_single_template(), sb_sermon_page_dictionary());
+	$single_tpl = str_replace('implode($ref_output, ", ")', 'implode(", ", $ref_output)', $single_tpl);
+	sb_update_option('single_output', $single_tpl);
+
+	$search_tpl = strtr(sb_default_multi_template(), sb_search_results_dictionary());
+	$search_tpl = str_replace('implode($ref_output, ", ")', 'implode(", ", $ref_output)', $search_tpl);
+	sb_update_option('search_output', $search_tpl);
 	$books = sb_get_default('eng_bible_books');
 	foreach ($books as $book)
 		$wpdb->query("INSERT INTO {$wpdb->prefix}sb_books VALUES (null, '{$book}')");

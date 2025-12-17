@@ -45,7 +45,7 @@ function sb_sermon_page_dictionary() {
 		'[service_link]' => '<a href="<?php sb_print_service_link($sermon["Sermon"]) ?>"><?php echo stripslashes($sermon["Sermon"]->service) ?></a>',
 		'[date]' => '<?php echo sb_formatted_date ($sermon["Sermon"]) ?>',
 		'[passages_loop]' => '<?php $ref_output = array(); for ($i = 0; $i < count($sermon["Sermon"]->start); $i++): ?>',
-		'[/passages_loop]' => '<?php endfor; echo implode($ref_output, ", "); ?>',
+		'[/passages_loop]' => '<?php endfor; echo implode(", ", $ref_output); ?>',
 		'[passage]' => '<?php $ref_output[] = sb_get_books($sermon["Sermon"]->start[$i], $sermon["Sermon"]->end[$i]) ?>',
 		'[files_loop]' => '<?php $media = sb_get_stuff($sermon["Sermon"]); foreach ((array) $media as $media_type => $media_names) { if (is_array($media_names) && $media_type != "Code") { foreach ((array)$media_names as $media_name) {  ?>',
 		'[/files_loop]' => '<?php } } } ?>',

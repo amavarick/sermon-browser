@@ -41,12 +41,20 @@ function sb_upgrade_options () {
 // Runs the version upgrade procedures (re-save templates, add options added since last db update)
 function sb_version_upgrade ($old_version, $new_version) {
 	require_once(SB_INCLUDES_DIR.'/dictionary.php');
-	$sbmf = sb_get_option('search_template');
-	if ($sbmf)
-		sb_update_option('search_output', strtr($sbmf, sb_search_results_dictionary()));
-	$sbsf = sb_get_option('single_template');
-	if ($sbsf)
-		sb_update_option('single_output', strtr($sbsf, sb_sermon_page_dictionary()));
+// Fix PHP 8 implode warning
+$sbmf = sb_get_option('search_template');
+if ($sbmf) {
+    $fixed = strtr($sbmf, sb_search_results_dictionary());
+    $fixed = str_replace('implode($ref_output, ", ")', 'implode(", ", $ref_output)', $fixed);
+    sb_update_option('search_output', $fixed);
+}
+
+$sbsf = sb_get_option('single_template');
+if ($sbsf) {
+    $fixed = strtr($sbsf, sb_sermon_page_dictionary());
+    $fixed = str_replace('implode($ref_output, ", ")', 'implode(", ", $ref_output)', $fixed);
+    sb_update_option('single_output', $fixed);
+}
 	sb_update_option('code_version', $new_version);
 	if (sb_get_option('filter_type') == '')
 		sb_update_option('filter_type', 'dropdown');
