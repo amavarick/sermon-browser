@@ -56,6 +56,37 @@ The frontend output is inserted by sb_shortcode
 define('SB_CURRENT_VERSION', '0.45.21');
 define('SB_DATABASE_VERSION', '1.7');
 sb_define_constants();
+// Universal patch for PHP 8: Fix deprecated implode() usage in Sermon Browser templates
+add_action('plugins_loaded', function () {
+
+    // List of template options that may contain implode() usage
+    $template_options = [
+        'single_output',
+        'search_output',
+        'single_template',
+        'search_template',
+    ];
+
+    foreach ($template_options as $option_name) {
+        if (!function_exists('sb_get_option')) {
+            return; // Sermon Browser not initialized
+        }
+
+        $tpl = sb_get_option($option_name);
+
+        if ($tpl && strpos($tpl, 'implode($ref_output') !== false) {
+            // Fix deprecated implode() usage
+            $tpl = str_replace(
+                'implode($ref_output, ", ")',
+                'implode(", ", $ref_output)',
+                $tpl
+            );
+
+            sb_update_option($option_name, $tpl);
+        }
+    }
+});
+
 add_action ('plugins_loaded', 'sb_hijack');
 add_action ('init', 'sb_sermon_init');
 add_action ('widgets_init', 'sb_widget_sermon_init');
