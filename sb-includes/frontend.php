@@ -498,10 +498,6 @@ function sb_add_headers() {
 		wp_enqueue_style('sb_style');
 		$pageid = $wpdb->get_var("SELECT ID FROM {$wpdb->posts} WHERE post_content LIKE '%[sermons%' AND (post_status = 'publish' OR post_status = 'private') AND ID={$post->ID} AND post_date < NOW();");
 		if ($pageid !== NULL) {
-			if (sb_get_option('filter_type') == 'dropdown') {
-				wp_enqueue_script('sb_datepicker');
-				wp_enqueue_style ('sb_datepicker');
-			}
 			if (isset($_REQUEST['title']) || isset($_REQUEST['preacher']) || isset($_REQUEST['date']) || isset($_REQUEST['enddate']) || isset($_REQUEST['series']) || isset($_REQUEST['service']) || isset($_REQUEST['book']) || isset($_REQUEST['stag']))
 				echo "<link rel=\"alternate\" type=\"application/rss+xml\" title=\"".__('Custom sermon podcast', 'sermon-browser')."\" href=\"".sb_podcast_url()."\" />\r";
 			wp_enqueue_script('jquery');
@@ -1024,9 +1020,9 @@ function sb_print_filters($filter) {
 						</tr>
 						<tr>
 							<td class="fieldname"><?php _e('Start date', 'sermon-browser') ?></td>
-							<td class="field"><input type="text" name="date" id="date" value="<?php echo (isset($_REQUEST['date']) ? esc_html($_REQUEST['date']) : '') ?>" /></td>
+							<td class="field"><input type="date" name="date" id="date" value="<?php echo esc_attr($date) ?>" placeholder="YYYY-MM-DD" /></td>
 							<td class="fieldname rightcolumn"><?php _e('End date', 'sermon-browser') ?></td>
-							<td class="field"><input type="text" name="enddate" id="enddate" value="<?php echo (isset($_REQUEST['enddate']) ? esc_html($_REQUEST['enddate']) : '') ?>" /></td>
+							<td class="field"><input type="date" name="enddate" id="enddate" value="<?php echo esc_attr($enddate) ?>" placeholder="YYYY-MM-DD" /></td>
 						</tr>
 						<tr>
 							<td class="fieldname"><?php _e('Keywords', 'sermon-browser') ?></td>
@@ -1057,16 +1053,6 @@ function sb_print_filters($filter) {
 				</div>
 			</form>
 		</div>
-		<script type="text/javascript">
-			jQuery.datePicker.setDateFormat('ymd','-');
-			jQuery('#date').datePicker({startDate:'01/01/1970'});
-			jQuery('#enddate').datePicker({startDate:'01/01/1970'});
-			<?php if ($hide_filter === TRUE) { ?>
-			jQuery(document).ready(function() {
-				<?php echo $js_hide; ?>
-			});
-			<?php } ?>
-		</script>
 	<?php
 	}
 }
