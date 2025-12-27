@@ -2478,9 +2478,9 @@ function sb_widget_popular_control() {
 	if (isset($_POST['widget-popular-sermons-submit'])) {
 		$title = sanitize_text_field(stripslashes($_POST['widget-popular-title']));
 		$limit = (int) ($_POST['widget-popular-limit']);
-		$display_sermons = (isset($_POST['widget-popular-display-sermons']));
-		$display_series = (isset($_POST['widget-popular-display-series']));
-		$display_preachers = (isset($_POST['widget-popular-display-preachers']));
+        $display_sermons   = filter_var($options['display_sermons'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $display_series    = filter_var($options['display_series'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $display_preachers = filter_var($options['display_preachers'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
 		$options = array('title' => $title, 'limit' => $limit, 'display_sermons' => $display_sermons, 'display_series' => $display_series, 'display_preachers' => $display_preachers);
 		sb_update_option('popular_widget_options', $options);
