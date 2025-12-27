@@ -273,9 +273,19 @@ function sb_widget_popular ($args) {
 		}
 	}
 
-	$jscript .= 'if (jQuery.getSbCookie() == "preachers") { jQuery("#popular_preachers_trigger'.$suffix.'").attr("style", "font-weight:bold"); jQuery("#sb_popular_wrapper'.$suffix.'").html("'.addslashes($output['preachers']).'")};';
-	$jscript .= 'if (jQuery.getSbCookie() == "series") { jQuery("#popular_series_trigger'.$suffix.'").attr("style", "font-weight:bold"); jQuery("#sb_popular_wrapper'.$suffix.'").html("'.addslashes($output['series']).'")};';
-	$jscript .= 'if (jQuery.getSbCookie() == "sermons") { jQuery("#popular_sermons_trigger'.$suffix.'").attr("style", "font-weight:bold"); jQuery("#sb_popular_wrapper'.$suffix.'").html("'.addslashes($output['sermons']).'")};';
+// Replace the previous $jscript cookie checks with this secured version
+$jscript .= 'if (jQuery.getSbCookie() == "preachers") { 
+                jQuery("#popular_preachers_trigger'.$suffix.'").attr("style", "font-weight:bold"); 
+                jQuery("#sb_popular_wrapper'.$suffix.'").html("'.addslashes($output['preachers'] ?? '').'")
+            };';
+$jscript .= 'if (jQuery.getSbCookie() == "series") { 
+                jQuery("#popular_series_trigger'.$suffix.'").attr("style", "font-weight:bold"); 
+                jQuery("#sb_popular_wrapper'.$suffix.'").html("'.addslashes($output['series'] ?? '').'")
+            };';
+$jscript .= 'if (jQuery.getSbCookie() == "sermons") { 
+                jQuery("#popular_sermons_trigger'.$suffix.'").attr("style", "font-weight:bold"); 
+                jQuery("#sb_popular_wrapper'.$suffix.'").html("'.addslashes($output['sermons'] ?? '').'")
+            };';
 	echo '<p>'.implode(' | ', $trigger).'</p>';
 	echo '<div id="sb_popular_wrapper'.$suffix.'">'.current($output).'</div>';
 	echo '<script type="text/javascript">jQuery.setSbCookie = function (value) {
