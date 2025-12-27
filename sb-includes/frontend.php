@@ -412,8 +412,12 @@ function sb_add_esv_text ($start, $end) {
 
 // Converts XML string to object
 function sb_get_xml ($content) {
-    $xml = new SimpleXMLElement($content);
-	return $xml;
+    if (empty($content)) return null; // Prevent crash
+    try {
+        return new SimpleXMLElement($content);
+    } catch (Exception $e) {
+        return null; 
+    }
 }
 
 //Returns NET Bible text
@@ -456,7 +460,7 @@ function sb_add_other_bibles ($start, $end, $version) {
 	$output='';
 	$items = array();
 	$items = $xml->range->item;
-	if ($xml->range->item)
+	if ($xml && isset($xml->range->item)) {
 		foreach ($xml->range->item as $item) {
 			if ($item->text != '[[EMPTY]]') {
 				if ($old_chapter == $item->chapter) {
@@ -468,6 +472,7 @@ function sb_add_other_bibles ($start, $end, $version) {
 				$output .=	 $item->text;
 			}
 		}
+	}
 	return '<div class="'.$version.'"><h2>'.sb_tidy_reference ($start, $end). '</h2><p>'.$output.' (<a href="http://biblepro.bibleocean.com/dox/default.aspx">'. strtoupper($version). '</a>)</p></div>';
 }
 
@@ -486,7 +491,8 @@ function sb_build_url($arr, $clear = false) {
 	// Word list for URL building purpose
 	$wl = array('preacher', 'title', 'date', 'enddate', 'series', 'service', 'sortby', 'dir', 'book', 'stag', 'podcast');
 	$foo = array_merge((array) $_GET, (array) $_POST, $arr);
-	foreach ($foo as $k => $v) {
+	$bar = array(); // MUST initialize this variable explicitly
+    foreach ($foo as $k => $v) {
 		if (in_array($k, array_keys($arr)) || (in_array($k, $wl) && !$clear)) {
 			$bar[] = rawurlencode($k).'='.rawurlencode($v);
 		}
