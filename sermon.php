@@ -279,7 +279,7 @@ function sb_add_pages() {
 * Converts php.ini mega- or giga-byte numbers into kilobytes
 *
 * @param string $val
-* @return integer
+* @return int
 */
 function sb_return_kbytes($val) {
     $val = trim($val);
@@ -311,8 +311,8 @@ function sb_return_kbytes($val) {
 *
 * Returns the number of plays for a particular file
 *
-* @param integer $sermonid
-* @return integer
+* @param int $sermonid
+* @return int
 */
 function sb_sermon_stats($sermonid) {
 	global $wpdb;
@@ -381,7 +381,7 @@ function sb_display_front_end() {
 /**
 * Get the page_id of the main sermons page
 *
-* @return integer
+* @return int
 */
 function sb_get_page_id() {
 	global $wpdb, $post;
@@ -557,7 +557,7 @@ function sb_widget_sermon_init() {
 *
 * Allows main widget functionality to be in the frontend package, whilst still allowing widgets to be modified in admin
 * @param array $args
-* @param integer $widget_args
+* @param int $widget_args
 */
 function sb_widget_sermon_wrapper ($args, $widget_args = 1) {
 	require_once (SB_INCLUDES_DIR.'/frontend.php');
@@ -704,9 +704,9 @@ function sb_get_bible_books () {
 * Uses sb_create_multi_sermon_query to general the SQL statement
 * @param array $filter
 * @param string $order
-* @param integer $page
-* @param integer $limit
-* @global integer record_count
+* @param int $page
+* @param int $limit
+* @global int record_count
 * @return array
 */
 function sb_get_sermons($filter, $order, $page = 1, $limit = 0, $hide_empty = false) {
@@ -735,8 +735,8 @@ function sb_get_sermons($filter, $order, $page = 1, $limit = 0, $hide_empty = fa
 *
 * @param array $filter
 * @param string $order
-* @param integer $page
-* @param integer $limit
+* @param int $page
+* @param int $limit
 * @return string SQL query
 */
 function sb_create_multi_sermon_query ($filter, $order, $page = 1, $limit = 0, $hide_empty = false) {
@@ -765,7 +765,7 @@ function sb_create_multi_sermon_query ($filter, $order, $page = 1, $limit = 0, $
     if ( !in_array($order['by'], $valid_sortby_values) )
         $order['by'] = $default_order['by'];
 
-    // === PHP 8+ FIX: Force $page and $limit to integers with safe defaults ===
+    // === PHP 8+ FIX: Force $page and $limit to int with safe defaults ===
     $page  = max(1, (int)$page);
     $limit = (int)$limit;
     if ($limit <= 0) {
@@ -826,7 +826,7 @@ WHERE {$cond} ORDER BY ". $order['by'] . " " . $order['dir'] . " LIMIT " . $offs
 /**
 * Returns the default time for a particular service
 *
-* @param integer $service (id in database)
+* @param int $service (id in database)
 * @return string (service time)
 */
 function sb_default_time($service) {
@@ -842,7 +842,7 @@ function sb_default_time($service) {
 /**
 * Gets attachments from database
 *
-* @param integer $sermon (id in database)
+* @param int $sermon (id in database)
 * @param boolean $mp3_only (if true will only return MP3 files)
 * @return array
 */
