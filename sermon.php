@@ -488,7 +488,7 @@ function sb_shortcode($atts, $content=null) {
 		    }
         }
 	} else {
-		// Enforce Sort Criteria (Default to most recent date)
+		// Enforce Sort Criteria
 		$sort_criteria = isset($_REQUEST['sortby']) ? sanitize_key($_REQUEST['sortby']) : 'm.datetime';
 		
 		// Enforce Direction
@@ -505,19 +505,28 @@ function sb_shortcode($atts, $content=null) {
 		// PHP 8.5 Safe Pagination
 		$page = isset($_REQUEST['pagenum']) ? max(1, (int)$_REQUEST['pagenum']) : 1;
 		
-		// DYNAMIC LIMIT: Pulls the "20" directly from your Admin Options
+		// DYNAMIC LIMIT: Pulls directly from your Admin Options
 		$hide_empty = (bool)sb_get_option('hide_no_attachments');
 		$limit = (int)($atts['limit'] ?? 0);
 		if ($limit <= 0) {
 			$limit = (int)sb_get_option('sermons_per_page');
-			if ($limit <= 0) $limit = 20; // Fallback only if database is empty
+			if ($limit <= 0) $limit = 20; 
 		}
 
-		// FETCH SERMONS: This ensures data is loaded on the first page load
-		// The sb_get_sermons function also updates the global $record_count
-		$sermons = sb_get_sermons($atts, $sort_order, $page, $limit, $hide_empty);
+		// --- NEW: HARVEST FILTERS FROM URL (Fixes Sermons (0) on Page 2) ---
+		$current_filters = array(
+			'preacher' => (int)($_REQUEST['preacher'] ?? ($atts['preacher'] ?? 0)),
+			'series'   => (int)($_REQUEST['series']   ?? ($atts['series']   ?? 0)),
+			'service'  => (int)($_REQUEST['service']  ?? ($atts['service']  ?? 0)),
+			'book'     => sanitize_text_field($_REQUEST['book']  ?? ($atts['book']  ?? '')),
+			'title'    => sanitize_text_field($_REQUEST['title'] ?? ($atts['title'] ?? '')),
+		);
+
+		// FETCH SERMONS into the GLOBAL scope
+		global $sermons, $record_count;
+		$sermons = sb_get_sermons($current_filters, $sort_order, $page, $limit, $hide_empty);
 		
-		// Render the template from your Options
+		// Render the template
 		$output = '?>'.sb_get_option('search_output');
 		eval($output);
 	}
