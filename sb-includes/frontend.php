@@ -1131,31 +1131,34 @@ function sb_print_filters($filter) {
 							</td>
 						</tr>
 						<tr>
-							<td colspan="2" style="vertical-align: middle;">
+							<td colspan="2" style="vertical-align: middle; text-align: left;">
 								<?php 
-								// Reset button logic with inline JS for hover effects
+								// Reset button logic
 								if (isset($_REQUEST['preacher']) || isset($_REQUEST['service']) || isset($_REQUEST['series']) || isset($_REQUEST['book']) || isset($_REQUEST['title']) || isset($_REQUEST['date']) || isset($_REQUEST['stag'])): 
 								?>
 									<a href="<?php echo esc_url(sb_display_url()); ?>" 
-									   onmouseover="this.style.backgroundColor='#e2e2e2'; this.style.color='#cc0000';" 
-									   onmouseout="this.style.backgroundColor='#f4f4f4'; this.style.color='#444';"
+									   onmouseover="this.style.backgroundColor='#333';" 
+									   onmouseout="this.style.backgroundColor='#1a1a1a';"
 									   style="display: inline-block; 
-											  padding: 5px 12px; 
-											  background-color: #f4f4f4; 
-											  color: #444; 
-											  border: 1px solid #ccc; 
-											  border-radius: 4px; 
-											  font-size: 13px; 
+											  padding: 10px 22px; 
+											  background-color: #1a1a1a; 
+											  color: #ffffff; 
+											  border: none; 
+											  border-radius: 0px; 
+											  font-family: inherit;
+											  font-size: 16px; 
 											  font-weight: bold; 
 											  text-decoration: none; 
 											  text-transform: uppercase;
-											  transition: all 0.2s ease;">
-										&laquo; <?php _e('Reset Filters', 'sermon-browser'); ?>
+											  line-height: 1.2;
+											  cursor: pointer;
+											  transition: background 0.2s ease;">
+										&laquo; Reset Filters
 									</a>
 								<?php endif; ?>
 							</td>
 							<td class="field" colspan="2" style="text-align:right;">
-								<input type="submit" class="filter" value="<?php _e('Filter &raquo;', 'sermon-browser') ?>">
+								<input type="submit" class="filter" value="<?php _e('Filter &raquo;', 'sermon-browser') ?>" style="padding: 10px 22px; background-color: #1a1a1a; color: #ffffff; border: none; border-radius: 0px; font-weight: bold; text-transform: uppercase; cursor: pointer;">
 							</td>
 						</tr>
 					</table>
