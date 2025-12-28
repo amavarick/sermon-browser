@@ -488,17 +488,35 @@ function sb_shortcode($atts, $content=null) {
 		    }
         }
 	} else {
+		// Enforce Sort Criteria (Default to most recent date)
 		$sort_criteria = isset($_REQUEST['sortby']) ? sanitize_key($_REQUEST['sortby']) : 'm.datetime';
-		if (!empty($atts['dir']))
+		
+		// Enforce Direction
+		if (!empty($atts['dir'])) {
 			$dir = sanitize_key($atts['dir']);
-		elseif ($sort_criteria == 'm.datetime')
+		} elseif ($sort_criteria == 'm.datetime') {
 			$dir = 'desc';
-		else
+		} else {
 			$dir = 'asc';
-		$sort_order = array('by' => $sort_criteria, 'dir' =>  $dir);
-		$page = isset($_REQUEST['pagenum']) ? (int)$_REQUEST['pagenum'] : 1;
-		$hide_empty = sb_get_option('hide_no_attachments');
-		$sermons = sb_get_sermons($atts, $sort_order, $page, (int)$atts['limit'], $hide_empty);
+		}
+		
+		$sort_order = array('by' => $sort_criteria, 'dir' => $dir);
+		
+		// PHP 8.5 Safe Pagination
+		$page = isset($_REQUEST['pagenum']) ? max(1, (int)$_REQUEST['pagenum']) : 1;
+		
+		// Determine Limit (20 based on your settings)
+		$hide_empty = (bool)sb_get_option('hide_no_attachments');
+		$limit = (int)($atts['limit'] ?? 0);
+		if ($limit <= 0) {
+			$limit = (int)sb_get_option('sermons_per_page');
+			if ($limit <= 0) $limit = 20;
+		}
+
+		// FETCH SERMONS: This ensures data is loaded on the first page load
+		$sermons = sb_get_sermons($atts, $sort_order, $page, $limit, $hide_empty);
+		
+		// Render the template from your Options
 		$output = '?>'.sb_get_option('search_output');
 		eval($output);
 	}
