@@ -924,10 +924,9 @@ function sb_url_minus_parameter ($param1, $param2='') {
 function sb_print_filters($filter) {
 	global $wpdb, $more_applied, $filter_options, $sermons, $record_count;
 
-	// FIX: Ensure the page number is recognized during the fetch
-	$page = isset($_REQUEST['pagenum']) ? max(1, (int)$_REQUEST['pagenum']) : 1;
-
+	// Only fetch here if the shortcode failed to fetch (Safety Net)
 	if (empty($sermons)) {
+		$page = isset($_REQUEST['pagenum']) ? max(1, (int)$_REQUEST['pagenum']) : 1;
 		$per_page = (int)sb_get_option('sermons_per_page');
 		if ($per_page <= 0) $per_page = 20;
 		
@@ -936,7 +935,6 @@ function sb_print_filters($filter) {
 			'dir' => isset($_REQUEST['dir']) ? sanitize_key($_REQUEST['dir']) : 'desc'
 		);
 		
-		// Passing $page here ensures "Next Page" fetches the next 20, not 0
 		$sermons = sb_get_sermons((array)$filter, $sort_order, $page, $per_page, (bool)sb_get_option('hide_no_attachments'));
 	}
 	
