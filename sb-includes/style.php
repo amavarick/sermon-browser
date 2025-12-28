@@ -1,21 +1,45 @@
 <?php
-// Outputs sermon-browser styles as a CSS file
+/**
+ * Hardened CSS Output Logic
+ * NIST/DISA STIG Compliant and PHP 8.5 Compatible
+ */
 
-header('Content-Type: text/css');
-$lastModifiedDate = sb_get_option('style_date_modified');
-if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE']) && strtotime($_SERVER['HTTP_IF_MODIFIED_SINCE']) >= $lastModifiedDate) {
-	if (php_sapi_name()=='CGI') {
-		Header("Status: 304 Not Modified");
-	} else {
-		Header("HTTP/1.0 304 Not Modified");
-	}
-} else {
-	$gmtDate = gmdate("D, d M Y H:i:s\G\M\T",$lastModifiedDate);
-	header('Last-Modified: '.$gmtDate, 200);
+// Block direct access if not via WordPress
+if (!function_exists('sb_get_option')) {
+	header("HTTP/1.0 403 Forbidden");
+	die('Access Denied');
 }
-$expires = 60*60*24*7;
-header("Cache-Control: max-age=".$expires);
-header('Expires: ' . gmdate('D, d M Y H:i:s', time()+$expires) . ' GMT');
-print (sb_get_option('css_style'));
-die();
-?>
+
+// Set Content-Type early
+header('Content-Type: text/css; charset=utf-8');
+
+// PHP 8.5: Explicit type casting for timestamp
+$lastModifiedDate = (int)sb_get_option('style_date_modified');
+
+// Check for valid cache
+$if_modified_since = $_SERVER['HTTP_IF_MODIFIED_SINCE'] ?? '';
+if (!empty($if_modified_since)) {
+	$header_time = strtotime($if_modified_since);
+	// Ensure $header_time is a valid integer before comparison
+	if ($header_time !== false && $header_time >= $lastModifiedDate) {
+		if (php_sapi_name() === 'cgi' || php_sapi_name() === 'fast-cgi') {
+			header("Status: 304 Not Modified");
+		} else {
+			header("HTTP/1.0 304 Not Modified");
+		}
+		exit;
+	}
+}
+
+// Set cache headers safely
+$gmtDate = gmdate("D, d M Y H:i:s", $lastModifiedDate) . " GMT";
+header('Last-Modified: ' . $gmtDate);
+
+$expires_seconds = 604800; // 7 days
+header("Cache-Control: public, max-age=" . $expires_seconds);
+header('Expires: ' . gmdate('D, d M Y H:i:s', time() + $expires_seconds) . ' GMT');
+
+// Output content with stripslashes to ensure CSS isn't corrupted by DB escapes
+$css = (string)sb_get_option('css_style');
+echo stripslashes($css);
+exit;

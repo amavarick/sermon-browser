@@ -22,6 +22,7 @@ function sb_display_sermons($options = array()) {
 	$preacher = (int)($preacher ?? 0);
 	$service = (int)($service ?? 0);
 	$series = (int)($series ?? 0);
+
 	if ($url_only == 1)
 		$limit = 1;
 	$sermons = sb_get_sermons(array(
@@ -70,7 +71,7 @@ function sb_widget_sermon($args, $widget_args=1) {
 		return;
 
 	// PHP 8.5 Fix: Prevent initialization failure by ensuring keys exist
-	$instance = $options[$number];
+	$instance = $options[$number] ?? array();
 	$preacher = (int)($instance['preacher'] ?? 0);
 	$service  = (int)($instance['service'] ?? 0);
 	$series   = (int)($instance['series'] ?? 0);
@@ -116,7 +117,7 @@ function sb_widget_sermon($args, $widget_args=1) {
 
 // Displays the tag cloud in the sidebar
 function sb_widget_tag_cloud ($args) {
-	extract($args);
+	extract((array)$args);
 	echo $before_widget;
 	echo $before_title.__('Sermon Browser tags', 'sermon-browser').$after_title;
 	sb_print_tag_clouds();
@@ -162,7 +163,7 @@ function sb_sort_object($a,$b) {
 // Displays the most popular sermons in the sidebar
 function sb_widget_popular ($args) {
 	global $wpdb;
-	extract($args);
+	extract((array)$args);
 	if (!isset($suffix))
 		$suffix = '_w';
 	if (!isset($options))
@@ -1023,7 +1024,7 @@ function sb_print_filters($filter) {
 		?>
 		<span class="inline_controls"><a href="#" id="show_hide_filter"></a></span>
 		<div id="mainfilter">
-			<form method="post" id="sermon-filter" action="<?php echo esc_url(sb_display_url()); ?>">
+			<form method="get" id="sermon-filter" action="<?php echo esc_url(sb_display_url()); ?>">
 				<div style="clear:both">
 					<table class="sermonbrowser">
 						<tr>
@@ -1093,7 +1094,7 @@ function sb_print_filters($filter) {
 							<td class="field"><input type="submit" class="filter" value="<?php _e('Filter &raquo;', 'sermon-browser') ?>">			</td>
 						</tr>
 					</table>
-					<input type="hidden" name="page" value="1">
+					<input type="hidden" name="pagenum" value="1">
 				</div>
 			</form>
 		</div>
