@@ -505,15 +505,16 @@ function sb_shortcode($atts, $content=null) {
 		// PHP 8.5 Safe Pagination
 		$page = isset($_REQUEST['pagenum']) ? max(1, (int)$_REQUEST['pagenum']) : 1;
 		
-		// Determine Limit (20 based on your settings)
+		// DYNAMIC LIMIT: Pulls the "20" directly from your Admin Options
 		$hide_empty = (bool)sb_get_option('hide_no_attachments');
 		$limit = (int)($atts['limit'] ?? 0);
 		if ($limit <= 0) {
 			$limit = (int)sb_get_option('sermons_per_page');
-			if ($limit <= 0) $limit = 20;
+			if ($limit <= 0) $limit = 20; // Fallback only if database is empty
 		}
 
 		// FETCH SERMONS: This ensures data is loaded on the first page load
+		// The sb_get_sermons function also updates the global $record_count
 		$sermons = sb_get_sermons($atts, $sort_order, $page, $limit, $hide_empty);
 		
 		// Render the template from your Options
