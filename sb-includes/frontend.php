@@ -645,25 +645,47 @@ function sb_print_tag_clouds($minfont=80, $maxfont=150) {
 	echo implode(' ', $out);
 }
 
-//Prints link to next page
-function sb_print_next_page_link($limit = 0) {
+/**
+* Displays the 'Next page' link
+*/
+function sb_print_next_page_link() {
 	global $record_count;
-	if ($limit == 0)
-		$limit = (int)sb_get_option('sermons_per_page');
-	$current = isset($_REQUEST['pagenum']) ? (int) $_REQUEST['pagenum'] : 1;
-	if ($current < ceil($record_count / $limit)) {
-		$url = sb_build_url(array('pagenum' => ++$current), false);
-		echo '<a href="'.esc_url($url).'">'.__('Next page', 'sermon-browser').' &raquo;</a>';
+	static $already_printed_next = false;
+	if ($already_printed_next) { return; }
+
+	$per_page = (int)sb_get_option('sermons_per_page');
+	if ($per_page <= 0) $per_page = 20;
+	
+	$page = isset($_REQUEST['pagenum']) ? max(1, (int)$_REQUEST['pagenum']) : 1;
+
+	if ($record_count > ($page * $per_page)) {
+		$next_page = $page + 1;
+		$url = esc_url(add_query_arg('pagenum', $next_page));
+		echo '<a class="sb_next_link" href="' . $url . '">' . esc_html__('Next page', 'sermon-browser') . ' &raquo;</a>';
+		$already_printed_next = true;
 	}
 }
 
-//Prints link to previous page
-function sb_print_prev_page_link($limit = 0) {
-	if ($limit == 0) $limit = (int)sb_get_option('sermons_per_page');
-	$current = isset($_REQUEST['pagenum']) ? (int) $_REQUEST['pagenum'] : 1;
-	if ($current > 1) {
-		$url = sb_build_url(array('pagenum' => --$current), false);
-		echo '<a href="'.esc_url($url).'">'.__('Previous page', 'sermon-browser').'</a>';
+/**
+* Displays the 'Previous page' link
+*/
+function sb_print_prev_page_link() {
+	// Use a static variable to prevent the link from printing twice on one page
+	static $already_printed_prev = false;
+	if ($already_printed_prev) { return; }
+
+	$page = isset($_REQUEST['pagenum']) ? (int)$_REQUEST['pagenum'] : 1;
+
+	if ($page > 1) {
+		$prev_page = $page - 1;
+		// If going back to page 1, remove pagenum for a clean URL
+		if ($prev_page == 1) {
+			$url = esc_url(remove_query_arg('pagenum'));
+		} else {
+			$url = esc_url(add_query_arg('pagenum', $prev_page));
+		}
+		echo '<a class="sb_prev_link" href="' . $url . '">&laquo; ' . esc_html__('Previous page', 'sermon-browser') . '</a>';
+		$already_printed_prev = true;
 	}
 }
 
@@ -900,7 +922,22 @@ function sb_url_minus_parameter ($param1, $param2='') {
 
 //Displays the filter on sermon search page
 function sb_print_filters($filter) {
-	global $wpdb, $more_applied, $filter_options;
+	global $wpdb, $more_applied, $filter_options, $sermons, $record_count;
+
+	// Only fetch here if the shortcode failed to fetch (Safety Net)
+	if (empty($sermons)) {
+		$page = isset($_REQUEST['pagenum']) ? max(1, (int)$_REQUEST['pagenum']) : 1;
+		$per_page = (int)sb_get_option('sermons_per_page');
+		if ($per_page <= 0) $per_page = 20;
+		
+		$sort_order = array(
+			'by' => isset($_REQUEST['sortby']) ? sanitize_key($_REQUEST['sortby']) : 'm.datetime', 
+			'dir' => isset($_REQUEST['dir']) ? sanitize_key($_REQUEST['dir']) : 'desc'
+		);
+		
+		$sermons = sb_get_sermons((array)$filter, $sort_order, $page, $per_page, (bool)sb_get_option('hide_no_attachments'));
+	}
+	
 	$hide_filter = FALSE;
 	if (isset($filter['filterhide']) && $filter['filterhide'] == 'hide') {
 		$hide_filter = TRUE;
