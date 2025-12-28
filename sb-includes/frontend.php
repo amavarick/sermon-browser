@@ -1127,8 +1127,19 @@ function sb_print_filters($filter) {
 							</td>
 						</tr>
 						<tr>
-							<td colspan="3">&nbsp;</td>
-							<td class="field"><input type="submit" class="filter" value="<?php _e('Filter &raquo;', 'sermon-browser') ?>">			</td>
+							<td colspan="3">
+								<?php 
+								// Only show reset if a filter parameter exists in the URL
+								if (isset($_REQUEST['preacher']) || isset($_REQUEST['service']) || isset($_REQUEST['series']) || isset($_REQUEST['book']) || isset($_REQUEST['title']) || isset($_REQUEST['date']) || isset($_REQUEST['stag'])): 
+								?>
+									<a href="<?php echo esc_url(sb_display_url()); ?>" class="sb_reset_button" style="text-decoration:none;">
+										&laquo; <?php _e('Reset Filters', 'sermon-browser'); ?>
+									</a>
+								<?php endif; ?>
+							</td>
+							<td class="field">
+								<input type="submit" class="filter" value="<?php _e('Filter &raquo;', 'sermon-browser') ?>">
+							</td>
 						</tr>
 					</table>
 					<input type="hidden" name="pagenum" value="1">
