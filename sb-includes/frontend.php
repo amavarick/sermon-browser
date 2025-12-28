@@ -650,17 +650,19 @@ function sb_print_tag_clouds($minfont=80, $maxfont=150) {
 */
 function sb_print_next_page_link() {
 	global $record_count;
-	
-	// DYNAMIC: Respects your Admin "Sermons per page" setting
+	static $already_printed_next = false;
+	if ($already_printed_next) { return; }
+
 	$per_page = (int)sb_get_option('sermons_per_page');
-	if ($per_page <= 0) $per_page = 10;
+	if ($per_page <= 0) $per_page = 20;
 	
 	$page = isset($_REQUEST['pagenum']) ? max(1, (int)$_REQUEST['pagenum']) : 1;
 
-	// Only show "Next" if total sermons found is greater than current display
 	if ($record_count > ($page * $per_page)) {
 		$next_page = $page + 1;
-		echo '<a href="' . esc_url(add_query_arg('pagenum', $next_page)) . '">' . __('Next page', 'sermon-browser') . ' &raquo;</a>';
+		$url = esc_url(add_query_arg('pagenum', $next_page));
+		echo '<a class="sb_next_link" href="' . $url . '">' . esc_html__('Next page', 'sermon-browser') . ' &raquo;</a>';
+		$already_printed_next = true;
 	}
 }
 
