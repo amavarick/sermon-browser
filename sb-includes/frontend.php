@@ -914,11 +914,12 @@ function sb_url_minus_parameter ($param1, $param2='') {
 
 //Displays the filter on sermon search page
 function sb_print_filters($filter) {
-	global $wpdb, $more_applied, $filter_options, $sermons, $record_count; // Added $sermons and $record_count
+	global $wpdb, $more_applied, $filter_options, $sermons, $record_count;
 
-	// --- START OF SAFETY NET: Load sermons if none exist (First Load) ---
+	// FIX: Ensure the page number is recognized during the fetch
+	$page = isset($_REQUEST['pagenum']) ? max(1, (int)$_REQUEST['pagenum']) : 1;
+
 	if (empty($sermons)) {
-		$page = isset($_REQUEST['pagenum']) ? max(1, (int)$_REQUEST['pagenum']) : 1;
 		$per_page = (int)sb_get_option('sermons_per_page');
 		if ($per_page <= 0) $per_page = 20;
 		
@@ -927,10 +928,10 @@ function sb_print_filters($filter) {
 			'dir' => isset($_REQUEST['dir']) ? sanitize_key($_REQUEST['dir']) : 'desc'
 		);
 		
-		// Run the fetch for the first time
+		// Passing $page here ensures "Next Page" fetches the next 20, not 0
 		$sermons = sb_get_sermons((array)$filter, $sort_order, $page, $per_page, (bool)sb_get_option('hide_no_attachments'));
 	}
-	// --- END OF SAFETY NET ---
+	
 	$hide_filter = FALSE;
 	if (isset($filter['filterhide']) && $filter['filterhide'] == 'hide') {
 		$hide_filter = TRUE;
