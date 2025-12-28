@@ -101,29 +101,29 @@ function sb_hijack() {
 
 	global $filetypes, $wpdb;
 
-	wp_timezone_override_offset();
+	if (function_exists('wp_timezone_override_offset')) { wp_timezone_override_offset(); }
 
 	if (isset($_POST['sermon']) && $_POST['sermon'] == 1)
 		require(SB_INCLUDES_DIR.'/ajax.php');
-	if (stripos($_SERVER['REQUEST_URI'], 'sb-style.css') !== FALSE || isset($_GET['sb-style']))
+	if (stripos($_SERVER['REQUEST_URI'] ?? '', 'sb-style.css') !== FALSE || isset($_GET['sb-style']))
 		require(SB_INCLUDES_DIR.'/style.php');
 
 	//Forces sermon download of local file
 	if (isset($_GET['download']) AND isset($_GET['file_name'])) {
 		$file_name = esc_sql(rawurldecode($_GET['file_name']));
-		$file_name = $wpdb->get_var("SELECT name FROM {$wpdb->prefix}sb_stuff WHERE name='{$file_name}'");
+		$file_name = $wpdb->get_var($wpdb->prepare("SELECT name FROM {$wpdb->prefix}sb_stuff WHERE name=%s", $file_name));
 		if (!is_null($file_name)) {
 			header("Content-Type: application/octet-stream");
 			header('Content-Disposition: attachment; filename="'.$file_name.'"');
 			sb_increase_download_count ($file_name);
-			$file_name = SB_ABSPATH.sb_get_option('upload_dir').$file_name;
-			$filesize = filesize($file_name);
+			$file_path = SB_ABSPATH.sb_get_option('upload_dir').$file_name;
+			$filesize = @filesize($file_path);
 			if ($filesize != 0)
-				header("Content-Length: ".filesize($file_name));
-			sb_output_file($file_name);
+				header("Content-Length: ".$filesize);
+			sb_output_file($file_path);
 			die();
 		} else
-			wp_die(htmlentities(rawurldecode($_GET['file_name'])).' '.__('not found', 'sermon-browser'), __('File not found', 'sermon-browser'), array('response' => 404));
+			wp_die(esc_html(rawurldecode($_GET['file_name'])).' '.__('not found', 'sermon-browser'), __('File not found', 'sermon-browser'), array('response' => 404));
 	}
 
 	//Forces sermon download of external URL
@@ -132,7 +132,7 @@ function sb_hijack() {
 		require_once (ABSPATH.'wp-admin/includes/file.php');
 		$downloaded_file = download_url($url);
 		if (is_wp_error ($downloaded_file)) {
-			wp_die(htmlentities(rawurldecode($_GET['url'])).' '.__('not found', 'sermon-browser'), __('URL not found', 'sermon-browser'), array('response' => 404));
+			wp_die(esc_html(rawurldecode($_GET['url'])).' '.__('not found', 'sermon-browser'), __('URL not found', 'sermon-browser'), array('response' => 404));
 		}
 		header ('Content-Type: '.mime_content_type($downloaded_file));
 		header ('Content-Disposition: attachment; filename="'.basename($url).'"');
@@ -146,19 +146,16 @@ function sb_hijack() {
 // Returns local file (doesn't force download) — SAFE: internal only
 if (isset($_GET['show']) && isset($_GET['file_name'])) {
     $file_name = esc_sql(rawurldecode($_GET['file_name']));
-    $file_name = $wpdb->get_var("SELECT name FROM {$wpdb->prefix}sb_stuff WHERE name='{$file_name}'");
+    $file_name = $wpdb->get_var($wpdb->prepare("SELECT name FROM {$wpdb->prefix}sb_stuff WHERE name=%s", $file_name));
     if (!is_null($file_name)) {
         $url = sb_get_option('upload_url') . $file_name;
         sb_increase_download_count($file_name);
         wp_safe_redirect($url);
         exit;
     } else {
-        wp_die(htmlentities(rawurldecode($_GET['file_name'])) . ' ' . __('not found', 'sermon-browser'), __('File not found', 'sermon-browser'), array('response' => 404));
+        wp_die(esc_html(rawurldecode($_GET['file_name'])) . ' ' . __('not found', 'sermon-browser'), __('File not found', 'sermon-browser'), array('response' => 404));
     }
 }
-
-// REMOVED: Vulnerable open redirect via ?show=1&url=...
-// The block that allowed arbitrary external redirects has been completely removed for security.
 }
 
 /**
@@ -168,7 +165,7 @@ if (isset($_GET['show']) && isset($_GET['file_name'])) {
 */
 function sb_sermon_init () {
 	global $wpdb, $defaultMultiForm, $defaultSingleForm, $defaultStyle;
-	if (IS_MU) {
+	if (defined('IS_MU') && IS_MU) {
 			load_plugin_textdomain('sermon-browser', '', 'sb-includes');
 	} else {
 			load_plugin_textdomain('sermon-browser', '', 'sermon-browser/sb-includes');
@@ -198,17 +195,17 @@ function sb_sermon_init () {
 	// Attempt to set php.ini directives
 	if (strpos(ini_get('disable_functions'), 'ini_set') === FALSE) {
 		if (sb_return_kbytes(ini_get('upload_max_filesize'))<15360)
-			ini_set('upload_max_filesize', '15M');
+			@ini_set('upload_max_filesize', '15M');
 		if (sb_return_kbytes(ini_get('post_max_size'))<15360)
-			ini_set('post_max_size', '15M');
+			@ini_set('post_max_size', '15M');
 		if (sb_return_kbytes(ini_get('memory_limit'))<49152)
-			ini_set('memory_limit', '48M');
+			@ini_set('memory_limit', '48M');
 		if (intval(ini_get('max_input_time'))<600)
-			ini_set('max_input_time','600');
+			@ini_set('max_input_time','600');
 		if (intval(ini_get('max_execution_time'))<600)
-			ini_set('max_execution_time', '600');
+			@ini_set('max_execution_time', '600');
 		if (ini_get('file_uploads')<>'1')
-			ini_set('file_uploads', '1');
+			@ini_set('file_uploads', '1');
 	}
 
 	// Check whether upgrade required
@@ -316,9 +313,10 @@ function sb_return_kbytes($val) {
 */
 function sb_sermon_stats($sermonid) {
 	global $wpdb;
-	$stats = $wpdb->get_var("SELECT SUM(count) FROM ".$wpdb->prefix."sb_stuff WHERE sermon_id=".$sermonid);
+	$stats = $wpdb->get_var($wpdb->prepare("SELECT SUM(count) FROM ".$wpdb->prefix."sb_stuff WHERE sermon_id=%d", (int)$sermonid));
 	if ($stats > 0)
 		return $stats;
+    return 0;
 }
 
 /**
@@ -393,7 +391,7 @@ function sb_get_page_id() {
 	if (!$pageid)
 		return 0;
 	else
-		return intval($pageid);
+		return (int)$pageid;
 }
 
 /**
@@ -403,7 +401,7 @@ function sb_get_page_id() {
 */
 function sb_display_url() {
 	global $wpdb, $post, $sb_display_url;
-	if ($sb_display_url == '') {
+	if (empty($sb_display_url)) {
 		$pageid = sb_get_page_id();
 		if ($pageid == 0)
 			return '';
@@ -426,12 +424,7 @@ function sb_display_url() {
 */
 function sb_footer_stats() {
 	global $wpdb;
-	echo '<!-- ';
-	echo($wpdb->num_queries.' queries. '.timer_stop().' seconds.');
-	echo chr(13);
-	print_r($wpdb->queries);
-	echo chr(13);
-	echo ' -->';
+	echo '';
 }
 
 /**
@@ -482,32 +475,28 @@ function sb_shortcode($atts, $content=null) {
 			$atts['id'] = '';
 			$wpdb->query('SET SQL_BIG_SELECTS=1');
 			$query = $wpdb->get_results(sb_create_multi_sermon_query($atts, array(), 1, 1));
-			$atts['id'] = $query[0]->id;
+			$atts['id'] = $query[0]->id ?? null;
 		}
-		$sermon = sb_get_single_sermon((int) $atts['id']);
-		if ($sermon)
-			eval('?>'.sb_get_option('single_output'));
-		else {
-			echo "<div class=\"sermon-browser-results\"><span class=\"error\">";
-			_e ('No sermons found.', 'sermon-browser');
-			echo "</span></div>";
-		}
+        if (!empty($atts['id'])) {
+    		$sermon = sb_get_single_sermon((int) $atts['id']);
+	    	if ($sermon)
+		    	eval('?>'.sb_get_option('single_output'));
+		    else {
+			    echo "<div class=\"sermon-browser-results\"><span class=\"error\">";
+			    _e ('No sermons found.', 'sermon-browser');
+			    echo "</span></div>";
+		    }
+        }
 	} else {
-		if (isset($_REQUEST['sortby']))
-			$sort_criteria = esc_sql($_REQUEST['sortby']);
-		else
-			$sort_criteria = 'm.datetime';
+		$sort_criteria = isset($_REQUEST['sortby']) ? sanitize_key($_REQUEST['sortby']) : 'm.datetime';
 		if (!empty($atts['dir']))
-			$dir = esc_sql($atts['dir']);
+			$dir = sanitize_key($atts['dir']);
 		elseif ($sort_criteria == 'm.datetime')
 			$dir = 'desc';
 		else
 			$dir = 'asc';
 		$sort_order = array('by' => $sort_criteria, 'dir' =>  $dir);
-		if (isset($_REQUEST['pagenum']))
-			$page = (int)$_REQUEST['pagenum'];
-		else
-			$page = 1;
+		$page = isset($_REQUEST['pagenum']) ? (int)$_REQUEST['pagenum'] : 1;
 		$hide_empty = sb_get_option('hide_no_attachments');
 		$sermons = sb_get_sermons($atts, $sort_order, $page, (int)$atts['limit'], $hide_empty);
 		$output = '?>'.sb_get_option('search_output');
@@ -529,7 +518,7 @@ function sb_widget_sermon_init() {
 	$control_ops = array('width' => 400, 'height' => 350, 'id_base' => 'sermon');
 	$name = __('Sermons', 'sermon-browser');
 	$registered = false;
-	foreach (array_keys($options) as $o) {
+	foreach (array_keys((array)$options) as $o) {
 		if (!isset($options[$o]['limit']))
 			continue;
 		$id = "sermon-$o";
@@ -600,13 +589,13 @@ function sb_get_option($type) {
 	if (in_array($type, $special_options)) {
 		return stripslashes(base64_decode(get_option("sermonbrowser_{$type}")));
 	} else {
-		if (!$sermonbrowser_options) {
+		if (empty($sermonbrowser_options)) {
 			$options = get_option('sermonbrowser_options');
 			if ($options === FALSE)
 				return FALSE;
 			$sermonbrowser_options = unserialize(base64_decode($options));
 			if ($sermonbrowser_options === FALSE)
-				wp_die ('Failed to get SermonBrowser options '.base64_decode(get_option('sermonbrowser_options')));
+				wp_die ('Failed to get SermonBrowser options '.esc_html(base64_decode(get_option('sermonbrowser_options'))));
 		}
 		if (isset($sermonbrowser_options[$type]))
 			return $sermonbrowser_options[$type];
@@ -630,12 +619,12 @@ function sb_update_option($type, $val) {
 	if (in_array($type, $special_options))
 		return update_option ("sermonbrowser_{$type}", base64_encode($val));
 	else {
-		if (!$sermonbrowser_options) {
+		if (empty($sermonbrowser_options)) {
 			$options = get_option('sermonbrowser_options');
 			if ($options !== FALSE) {
 				$sermonbrowser_options = unserialize(base64_decode($options));
 				if ($sermonbrowser_options === FALSE)
-					wp_die ('Failed to get SermonBrowser options '.base64_decode(get_option('sermonbrowser_options')));
+					wp_die ('Failed to get SermonBrowser options '.esc_html(base64_decode(get_option('sermonbrowser_options'))));
 			}
 		}
 		if (!isset($sermonbrowser_options[$type]) || $sermonbrowser_options[$type] !== $val) {
@@ -674,18 +663,20 @@ function sb_mkdir($pathname, $mode=0777) {
 function sb_define_constants() {
 	$directories = explode(DIRECTORY_SEPARATOR,dirname(__FILE__));
 	if ($plugin_dir = $directories[count($directories)-1] == 'mu-plugins' || is_multisite()) {
-		define('IS_MU', TRUE);
+		if (!defined('IS_MU')) define('IS_MU', TRUE);
 	} else {
-		define('IS_MU', FALSE);
+		if (!defined('IS_MU')) define('IS_MU', FALSE);
 	}
-	if ($directories[count($directories)-1] == 'mu-plugins' )
-		define ('SB_PLUGIN_URL', content_url().'/'.$plugin_dir);
-	else
-		define ('SB_PLUGIN_URL', rtrim(content_url().'/plugins/'.plugin_basename(dirname(__FILE__)), '/'));
-	define ('SB_PLUGIN_DIR', sb_sanitise_path(defined('WP_CONTENT_DIR') ? WP_CONTENT_DIR : ABSPATH.'wp-content').'/plugins');
-	define ('SB_WP_CONTENT_DIR', sb_sanitise_path(WP_CONTENT_DIR));
-	define ('SB_INCLUDES_DIR', SB_PLUGIN_DIR.'/sermon-browser/sb-includes');
-	define ('SB_ABSPATH', sb_sanitise_path(ABSPATH));
+	if (!defined('SB_PLUGIN_URL')) {
+        if ($directories[count($directories)-1] == 'mu-plugins' )
+		    define ('SB_PLUGIN_URL', content_url().'/'.$plugin_dir);
+	    else
+		    define ('SB_PLUGIN_URL', rtrim(content_url().'/plugins/'.plugin_basename(dirname(__FILE__)), '/'));
+    }
+	if (!defined('SB_PLUGIN_DIR')) define ('SB_PLUGIN_DIR', sb_sanitise_path(defined('WP_CONTENT_DIR') ? WP_CONTENT_DIR : ABSPATH.'wp-content').'/plugins');
+	if (!defined('SB_WP_CONTENT_DIR')) define ('SB_WP_CONTENT_DIR', sb_sanitise_path(WP_CONTENT_DIR));
+	if (!defined('SB_INCLUDES_DIR')) define ('SB_INCLUDES_DIR', SB_PLUGIN_DIR.'/sermon-browser/sb-includes');
+	if (!defined('SB_ABSPATH')) define ('SB_ABSPATH', sb_sanitise_path(ABSPATH));
 }
 
 /**
@@ -726,7 +717,7 @@ function sb_get_sermons($filter, $order, $page = 1, $limit = 0, $hide_empty = fa
 
     $wpdb->query('SET SQL_BIG_SELECTS=1');
     $query = $wpdb->get_results(sb_create_multi_sermon_query($filter, $order, $page, $limit, $hide_empty));
-    $record_count = $wpdb->get_var("SELECT FOUND_ROWS()");
+    $record_count = (int) $wpdb->get_var("SELECT FOUND_ROWS()");
     return $query;
 }
 
@@ -759,7 +750,7 @@ function sb_create_multi_sermon_query ($filter, $order, $page = 1, $limit = 0, $
     $bs = '';
     $filter = array_merge($default_filter, (array)$filter);
     $order = array_merge($default_order, (array)$order);
-    if ( strtolower($order['dir']) != 'desc' && strtolower($order['dir']) != 'asc' )
+    if ( strtolower($order['dir'] ?? '') != 'desc' && strtolower($order['dir'] ?? '') != 'asc' )
         $order['dir'] = $default_order['dir'];
     $valid_sortby_values = array( 'm.id', 'm.title', 'm.datetime', 'm.start', 'm.end', 'p.id', 'p.name', 's.id', 's.name', 'ss.id', 'ss.name');
     if ( !in_array($order['by'], $valid_sortby_values) )
@@ -775,41 +766,43 @@ function sb_create_multi_sermon_query ($filter, $order, $page = 1, $limit = 0, $
 
     $cond = '1=1 ';
     if ($filter['title'] != '') {
-        $cond .= "AND (m.title LIKE '%" . esc_sql($filter['title']) . "%' OR m.description LIKE '%" . esc_sql($filter['title']). "%' OR t.name LIKE '%" . esc_sql($filter['title']) . "%') ";
+        $cond .= $wpdb->prepare("AND (m.title LIKE %s OR m.description LIKE %s OR t.name LIKE %s) ", '%'.esc_sql($filter['title']).'%', '%'.esc_sql($filter['title']).'%', '%'.esc_sql($filter['title']).'%');
     }
     if ($filter['preacher'] != 0) {
-        $cond .= 'AND m.preacher_id = ' . (int) $filter['preacher'] . ' ';
+        $cond .= $wpdb->prepare('AND m.preacher_id = %d ', (int) $filter['preacher']);
     }
     if ($filter['date'] != '') {
-        $cond .= 'AND m.datetime >= "' . esc_sql($filter['date']) . '" ';
+        $cond .= $wpdb->prepare('AND m.datetime >= %s ', esc_sql($filter['date']));
     }
     if ($filter['enddate'] != '') {
-        $cond .= 'AND m.datetime <= "' . esc_sql($filter['enddate']) . '" ';
+        $cond .= $wpdb->prepare('AND m.datetime <= %s ', esc_sql($filter['enddate']));
     }
     if ($filter['series'] != 0) {
-        $cond .= 'AND m.series_id = ' . (int) $filter['series'] . ' ';
+        $cond .= $wpdb->prepare('AND m.series_id = %d ', (int) $filter['series']);
     }
     if ($filter['service'] != 0) {
-        $cond .= 'AND m.service_id = ' . (int) $filter['service'] . ' ';
+        $cond .= $wpdb->prepare('AND m.service_id = %d ', (int) $filter['service']);
     }
     if ($filter['book'] != '') {
-        $cond .= 'AND bs.book_name = "' . esc_sql($filter['book']) . '" ';
+        $cond .= $wpdb->prepare('AND bs.book_name = %s ', esc_sql($filter['book']));
     } else {
         $bs = "AND bs.order = 0 AND bs.type= 'start' ";
     }
     if ($filter['tag'] != '') {
-        $cond .= "AND t.name LIKE '%" . esc_sql($filter['tag']) . "%' ";
+        $cond .= $wpdb->prepare("AND t.name LIKE %s ", '%'.esc_sql($filter['tag']).'%');
     }
     if ($filter['id'] != '') {
-        $cond .= "AND m.id LIKE '" . esc_sql($filter['id']) . "' ";
+        $cond .= $wpdb->prepare("AND m.id = %d ", (int)$filter['id']);
     }
     if ($hide_empty) {
         $cond .= "AND stuff.name != '' ";
     }
-    $offset = $limit * ($page - 1);
-    if ($order['by'] == 'b.id' ) {
-        $order['by'] = 'b.id '.esc_sql($order['dir']).', bs.chapter '.esc_sql($order['dir']).', bs.verse';
+    $offset = (int)($limit * ($page - 1));
+    $order_by = $order['by'];
+    if ($order_by == 'b.id' ) {
+        $order_by = 'b.id '.esc_sql($order['dir']).', bs.chapter '.esc_sql($order['dir']).', bs.verse';
     }
+    
     return "SELECT SQL_CALC_FOUND_ROWS DISTINCT m.id, m.title, m.description, m.datetime, m.time, m.start, m.end, p.id as pid, p.name as preacher, p.description as preacher_description, p.image, s.id as sid, s.name as service, ss.id as ssid, ss.name as series
 FROM {$wpdb->prefix}sb_sermons as m
 LEFT JOIN {$wpdb->prefix}sb_preachers as p ON m.preacher_id = p.id
@@ -820,7 +813,7 @@ LEFT JOIN {$wpdb->prefix}sb_books as b ON bs.book_name = b.name
 LEFT JOIN {$wpdb->prefix}sb_sermons_tags as st ON st.sermon_id = m.id
 LEFT JOIN {$wpdb->prefix}sb_tags as t ON t.id = st.tag_id
 LEFT JOIN {$wpdb->prefix}sb_stuff as stuff ON stuff.sermon_id = m.id
-WHERE {$cond} ORDER BY ". $order['by'] . " " . $order['dir'] . " LIMIT " . $offset . ", " . $limit;
+WHERE {$cond} ORDER BY ". $order_by . " " . esc_sql($order['dir']) . " LIMIT " . (int)$offset . ", " . (int)$limit;
 }
 
 /**
@@ -831,7 +824,7 @@ WHERE {$cond} ORDER BY ". $order['by'] . " " . $order['dir'] . " LIMIT " . $offs
 */
 function sb_default_time($service) {
 	global $wpdb;
-	$sermon_time = $wpdb->get_var("SELECT time FROM {$wpdb->prefix}sb_services WHERE id='{$service}'");
+	$sermon_time = $wpdb->get_var($wpdb->prepare("SELECT time FROM {$wpdb->prefix}sb_services WHERE id=%d", (int)$service));
 	if (isset($sermon_time)) {
 		return $sermon_time;
 	} else {
@@ -848,13 +841,14 @@ function sb_default_time($service) {
 */
 function sb_get_stuff($sermon, $mp3_only = FALSE) {
 	global $wpdb;
+    if (!$sermon) return array('Files' => array(), 'URLs' => array(), 'Code' => array());
 	if ($mp3_only) {
-		$stuff = $wpdb->get_results("SELECT f.type, f.name FROM {$wpdb->prefix}sb_stuff as f WHERE sermon_id = $sermon->id AND name LIKE '%.mp3' ORDER BY id desc");
+		$stuff = $wpdb->get_results($wpdb->prepare("SELECT f.type, f.name FROM {$wpdb->prefix}sb_stuff as f WHERE sermon_id = %d AND name LIKE '%.mp3' ORDER BY id desc", (int)$sermon->id));
 	} else {
-		$stuff = $wpdb->get_results("SELECT f.type, f.name FROM {$wpdb->prefix}sb_stuff as f WHERE sermon_id = $sermon->id ORDER BY id desc");
+		$stuff = $wpdb->get_results($wpdb->prepare("SELECT f.type, f.name FROM {$wpdb->prefix}sb_stuff as f WHERE sermon_id = %d ORDER BY id desc", (int)$sermon->id));
 	}
 	$file = $url = $code = array();
-	foreach ($stuff as $cur)
+	foreach ((array)$stuff as $cur)
 		${$cur->type}[] = $cur->name;
 	return array(
 		'Files' => $file,
@@ -873,7 +867,7 @@ function sb_get_stuff($sermon, $mp3_only = FALSE) {
 function sb_increase_download_count ($stuff_name) {
 	if (!(current_user_can('edit_posts') || current_user_can('publish_posts'))) {
 		global $wpdb;
-		$wpdb->query("UPDATE ".$wpdb->prefix."sb_stuff SET COUNT=COUNT+1 WHERE name='".esc_sql($stuff_name)."'");
+		$wpdb->query($wpdb->prepare("UPDATE ".$wpdb->prefix."sb_stuff SET COUNT=COUNT+1 WHERE name=%s", $stuff_name));
 	}
 }
 
@@ -884,13 +878,13 @@ function sb_increase_download_count ($stuff_name) {
 * @return bool success or failure
 */
 function sb_output_file($filename) {
-	$handle = fopen($filename, 'rb');
+	$handle = @fopen($filename, 'rb');
 	if ($handle === false)
 		return false;
 	if (ob_get_level() == 0)
 		ob_start();
 	while (!feof($handle)) {
-		set_time_limit(ini_get('max_execution_time'));
+		@set_time_limit((int)ini_get('max_execution_time'));
 		$buffer = fread($handle, 1048576);
 		echo $buffer;
 		ob_flush();
