@@ -1131,20 +1131,33 @@ function sb_print_filters($filter) {
 							</td>
 						</tr>
 						<tr>
-    <td colspan="2" style="vertical-align: middle;">
-        <?php 
-        // NIST Check: Only show the reset button if a filter is active in the URL
-        if (isset($_REQUEST['preacher']) || isset($_REQUEST['service']) || isset($_REQUEST['series']) || isset($_REQUEST['book']) || isset($_REQUEST['title']) || isset($_REQUEST['date']) || isset($_REQUEST['stag'])): 
-        ?>
-            <a href="<?php echo esc_url(sb_display_url()); ?>" class="sb_reset_button">
-                &laquo; <?php _e('Reset Filters', 'sermon-browser'); ?>
-            </a>
-        <?php endif; ?>
-    </td>
-    <td class="field" colspan="2" style="text-align:right;">
-        <input type="submit" class="filter" value="<?php _e('Filter &raquo;', 'sermon-browser') ?>">
-    </td>
-</tr>
+							<td colspan="2" style="vertical-align: middle;">
+								<?php 
+								// Reset button logic with inline JS for hover effects
+								if (isset($_REQUEST['preacher']) || isset($_REQUEST['service']) || isset($_REQUEST['series']) || isset($_REQUEST['book']) || isset($_REQUEST['title']) || isset($_REQUEST['date']) || isset($_REQUEST['stag'])): 
+								?>
+									<a href="<?php echo esc_url(sb_display_url()); ?>" 
+									   onmouseover="this.style.backgroundColor='#e2e2e2'; this.style.color='#cc0000';" 
+									   onmouseout="this.style.backgroundColor='#f4f4f4'; this.style.color='#444';"
+									   style="display: inline-block; 
+											  padding: 5px 12px; 
+											  background-color: #f4f4f4; 
+											  color: #444; 
+											  border: 1px solid #ccc; 
+											  border-radius: 4px; 
+											  font-size: 13px; 
+											  font-weight: bold; 
+											  text-decoration: none; 
+											  text-transform: uppercase;
+											  transition: all 0.2s ease;">
+										&laquo; <?php _e('Reset Filters', 'sermon-browser'); ?>
+									</a>
+								<?php endif; ?>
+							</td>
+							<td class="field" colspan="2" style="text-align:right;">
+								<input type="submit" class="filter" value="<?php _e('Filter &raquo;', 'sermon-browser') ?>">
+							</td>
+						</tr>
 					</table>
 					<input type="hidden" name="pagenum" value="1">
 				</div>
