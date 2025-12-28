@@ -668,16 +668,22 @@ function sb_print_next_page_link() {
 * Displays the 'Previous page' link
 */
 function sb_print_prev_page_link() {
+	// Use a static variable to prevent the link from printing twice on one page
+	static $already_printed_prev = false;
+	if ($already_printed_prev) { return; }
+
 	$page = isset($_REQUEST['pagenum']) ? (int)$_REQUEST['pagenum'] : 1;
 
 	if ($page > 1) {
 		$prev_page = $page - 1;
-		// If going back to page 1, we remove the pagenum arg for a cleaner URL
+		// If going back to page 1, remove pagenum for a clean URL
 		if ($prev_page == 1) {
-			echo '<a href="' . esc_url(remove_query_arg('pagenum')) . '">&laquo; ' . __('Previous page', 'sermon-browser') . '</a>';
+			$url = esc_url(remove_query_arg('pagenum'));
 		} else {
-			echo '<a href="' . esc_url(add_query_arg('pagenum', $prev_page)) . '">&laquo; ' . __('Previous page', 'sermon-browser') . '</a>';
+			$url = esc_url(add_query_arg('pagenum', $prev_page));
 		}
+		echo '<a class="sb_prev_link" href="' . $url . '">&laquo; ' . esc_html__('Previous page', 'sermon-browser') . '</a>';
+		$already_printed_prev = true;
 	}
 }
 
