@@ -42,24 +42,4 @@ header('Expires: ' . gmdate('D, d M Y H:i:s', time() + $expires_seconds) . ' GMT
 // Output content with stripslashes to ensure CSS isn't corrupted by DB escapes
 $css = (string)sb_get_option('css_style');
 echo stripslashes($css);
-// Add styling for the Reset Button
-// Hardened CSS for Reset Button UI
-echo "
-.sb_reset_button {
-    display: inline-block !important;
-    padding: 8px 15px !important;
-    background-color: #f4f4f4 !important;
-    color: #333 !important;
-    border: 1px solid #bbb !important;
-    border-radius: 2px !important;
-    font-size: 13px !important;
-    font-weight: bold !important;
-    text-decoration: none !important;
-    text-transform: uppercase !important;
-}
-.sb_reset_button:hover {
-    background-color: #e2e2e2 !important;
-    color: #cc0000 !important;
-    border-color: #888 !important;
-}";
 exit;
