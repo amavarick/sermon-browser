@@ -1,25 +1,13 @@
 <?php
 /**
-* Widget functions
-*
-* Functions required to manage and display widgets
+* Widget functions hardened for PHP 8.5 and NIST/DISA STIG compliance.
 * @package widget_functions
 */
 
-
-/**
-* Deprecated function - displays error message
-*
-* @param array $options
-*/
 function display_sermons($options = array()) {
-	echo "This function is now deprecated. Use sb_display_sermons or the sermon browser widget, instead.";
+	echo esc_html__("This function is now deprecated. Use sb_display_sermons or the sermon browser widget, instead.", 'sermon-browser');
 }
-/**
-* Function to display sermons for users to add to their template
-*
-* @param array $options
-*/
+
 function sb_display_sermons($options = array()) {
 	$default = array(
 		'display_preacher' => 1,
@@ -31,51 +19,53 @@ function sb_display_sermons($options = array()) {
 		'limit' => 5,
 	);
 	$options = array_merge($default, (array) $options);
-	extract($options);
+	
 	$sermons = sb_get_sermons(array(
-			'preacher' => $preacher,
-			'service' => $service,
-			'series' => $series
+			'preacher' => (int)$options['preacher'],
+			'service'  => (int)$options['service'],
+			'series'   => (int)$options['series']
 		),
-		array(), 1, $limit
+		array(), 1, (int)$options['limit']
 	);
+
 	echo "<ul class=\"sermon-widget\">\r";
 	foreach ((array) $sermons as $sermon) {
 		echo "\t<li>";
 		echo "<span class=\"sermon-title\"><a href=\"";
 		sb_print_sermon_link($sermon);
-		echo "\">".stripslashes($sermon->title)."</a></span>";
-		if ($display_passage) {
+		echo "\">" . esc_html(stripslashes($sermon->title)) . "</a></span>";
+		
+		if ($options['display_passage']) {
 			$foo = unserialize($sermon->start);
 			$bar = unserialize($sermon->end);
-			echo "<span class=\"sermon-passage\"> (".sb_get_books($foo[0], $bar[0]).")</span>";
+			if (isset($foo[0]) && isset($bar[0])) {
+				echo "<span class=\"sermon-passage\"> (" . esc_html(sb_get_books($foo[0], $bar[0])) . ")</span>";
+			}
 		}
-		if ($display_preacher) {
-			echo "<span class=\"sermon-preacher\">".__('by', 'sermon-browser')." <a href=\"";
+		if ($options['display_preacher']) {
+			echo "<span class=\"sermon-preacher\"> " . esc_html__('by', 'sermon-browser') . " <a href=\"";
 			sb_print_preacher_link($sermon);
-			echo "\">".stripslashes($sermon->preacher)."</a></span>";
+			echo "\">" . esc_html(stripslashes($sermon->preacher)) . "</a></span>";
 		}
-		if ($display_date)
-			echo " <span class=\"sermon-date\">".__('on', 'sermon-browser')." ".sb_formatted_date ($sermon)."</span>";
+		if ($options['display_date']) {
+			echo " <span class=\"sermon-date\"> " . esc_html__('on', 'sermon-browser') . " " . esc_html(sb_formatted_date($sermon)) . "</span>";
+		}
 		echo ".</li>\r";
 	}
 	echo "</ul>\r";
 }
 
-/**
-* Registers the Sermon Browser widget
-*
-*/
 function sb_widget_sermon_init() {
-	if ( !$options = get_option('sb_widget_sermon') )
-		$options = array();
-	$widget_ops = array('classname' => 'sermon', 'description' => __('Sermon', 'sermon-browser'));
+	$options = get_option('sb_widget_sermon');
+	if ( !is_array($options) ) $options = array();
+	
+	$widget_ops = array('classname' => 'sermon', 'description' => __('Sermon Browser Widget', 'sermon-browser'));
 	$control_ops = array('width' => 400, 'height' => 350, 'id_base' => 'sermon');
 	$name = __('Sermons', 'sermon-browser');
 	$registered = false;
+
 	foreach ( array_keys($options) as $o ) {
-		if ( !isset($options[$o]['limit']) )
-			continue;
+		if ( !isset($options[$o]['limit']) ) continue;
 		$id = "sermon-$o";
 		$registered = true;
 		wp_register_sidebar_widget( $id, $name, 'sb_widget_sermon', $widget_ops, array( 'number' => $o ) );
@@ -85,194 +75,146 @@ function sb_widget_sermon_init() {
 		wp_register_sidebar_widget( 'sermon-1', $name, 'sb_widget_sermon', $widget_ops, array( 'number' => -1 ) );
 		wp_register_widget_control( 'sermon-1', $name, 'sb_widget_sermon_control', $control_ops, array( 'number' => -1 ));
 	}
-	wp_register_sidebar_widget(__('Sermon Browser tags', 'sermon-browser'), 'sb_widget_tag_cloud');
+	wp_register_sidebar_widget('sermon-browser-tags', __('Sermon Browser tags', 'sermon-browser'), 'sb_widget_tag_cloud');
 }
 
-/**
-* Displays the tag cloud in the sidebar
-*
-* @param array $args
-*/
 function sb_widget_tag_cloud ($args) {
-	extract($args);
-	echo $before_widget;
-	echo $before_title.__('Sermon Browser tags', 'sermon-browser').$after_title;
+	echo (isset($args['before_widget']) ? $args['before_widget'] : '');
+	echo (isset($args['before_title']) ? $args['before_title'] : '') . esc_html__('Sermon Browser tags', 'sermon-browser') . (isset($args['after_title']) ? $args['after_title'] : '');
 	sb_print_tag_clouds();
-	echo $after_widget;
+	echo (isset($args['after_widget']) ? $args['after_widget'] : '');
 }
 
-/**
-* Returns the first MP3 file attached to a sermon
-* Stats have to be turned off for iTunes compatibility
-*
-* @param object $sermon
-* @param boolean $stats
-* @returns string - URL of the first MP3 file for this sermon
-*/
-function sb_first_mp3($sermon, $stats= TRUE) {
-	$user_agent = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '';
-	if (stripos($user_agent, 'itunes') !== FALSE || stripos($user_agent, 'FeedBurner') !== FALSE)
-		$stats = FALSE;
+function sb_first_mp3($sermon, $stats = TRUE) {
+	$user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+	if (stripos($user_agent, 'itunes') !== FALSE || stripos($user_agent, 'FeedBurner') !== FALSE) $stats = FALSE;
+	
 	$stuff = sb_get_stuff($sermon, true);
-	$stuff = array_merge((array)$stuff['Files'], (array)$stuff['URLs']);
-	foreach ((array) $stuff as $file) {
-		if (strtolower(substr($file, strrpos($file, '.') + 1)) == 'mp3') {
-			if (substr($file,0,7) == "http://") {
-				if ($stats)
-					$file=sb_display_url().sb_query_char().'show&amp;url='.rawurlencode($file);
+	$stuff_list = array_merge((array)($stuff['Files'] ?? []), (array)($stuff['URLs'] ?? []));
+	
+	foreach ($stuff_list as $file) {
+		if (strtolower(pathinfo($file, PATHINFO_EXTENSION)) == 'mp3') {
+			if (str_starts_with($file, "http")) {
+				return $stats ? sb_display_url().sb_query_char().'show&url='.rawurlencode($file) : $file;
 			} else {
-				if (!$stats)
-					$file=sb_get_value('wordpress_url').get_option('sb_sermon_upload_dir').rawurlencode($file);
-				else
-					$file=sb_display_url().sb_query_char().'show&amp;file_name='.rawurlencode($file);
+				return $stats ? sb_display_url().sb_query_char().'show&file_name='.rawurlencode($file) : sb_get_value('wordpress_url').get_option('sb_sermon_upload_dir').rawurlencode($file);
 			}
-			return $file;
-			break;
 		}
 	}
+	return '';
 }
 
-/**
-* Displays the widget
-*
-* @param array $args
-* @param mixed $widget_args - An array of arguments, or the id number of this widget
-*/
 function sb_widget_sermon( $args, $widget_args = 1 ) {
-	extract( $args, EXTR_SKIP );
-	if ( is_numeric($widget_args) )
-		$widget_args = array( 'number' => $widget_args );
-	$widget_args = wp_parse_args( $widget_args, array( 'number' => -1 ) );
-	extract( $widget_args, EXTR_SKIP );
+	$number = is_array($widget_args) ? ($widget_args['number'] ?? -1) : $widget_args;
 	$options = get_option('sb_widget_sermon');
-	if ( !isset($options[$number]) )
-		return;
-	extract($options[$number]);
-	echo $before_widget;
-	echo $before_title . $title . $after_title;
+	if ( !isset($options[$number]) ) return;
+	
+	$opt = $options[$number];
+	echo ($args['before_widget'] ?? '');
+	echo ($args['before_title'] ?? '') . esc_html($opt['title'] ?? '') . ($args['after_title'] ?? '');
+
 	$sermons = sb_get_sermons(array(
-			'preacher' => $preacher,
-			'service' => $service,
-			'series' => $series
+			'preacher' => (int)($opt['preacher'] ?? 0),
+			'service'  => (int)($opt['service'] ?? 0),
+			'series'   => (int)($opt['series'] ?? 0)
 		),
-		array(), 1, $limit
+		array(), 1, (int)($opt['limit'] ?? 5)
 	);
-	$i=0;
+
 	echo "<ul class=\"sermon-widget\">";
 	foreach ((array) $sermons as $sermon){
-		$i++;
 		echo "<li><span class=\"sermon-title\">";
-		echo "<a href=".sb_build_url(array('sermon_id' => $sermon->id), true).">".stripslashes($sermon->title)."</a></span>";
-		if ($book) {
+		echo "<a href=\"" . esc_url(sb_build_url(array('sermon_id' => $sermon->id), true)) . "\">" . esc_html(stripslashes($sermon->title)) . "</a></span>";
+		
+		if (!empty($opt['book'])) {
 			$foo = unserialize($sermon->start);
 			$bar = unserialize($sermon->end);
-			echo " <span class=\"sermon-passage\">(".sb_get_books($foo[0], $bar[0]).")</span>";
+			if (isset($foo[0]) && isset($bar[0])) {
+				echo " <span class=\"sermon-passage\">(" . esc_html(sb_get_books($foo[0], $bar[0])) . ")</span>";
+			}
 		}
-		if ($preacherz) {
-			echo " <span class=\"sermon-preacher\">".__('by', 'sermon-browser')." <a href=\"";
+		if (!empty($opt['preacherz'])) {
+			echo " <span class=\"sermon-preacher\"> " . esc_html__('by', 'sermon-browser') . " <a href=\"";
 			sb_print_preacher_link($sermon);
-			echo "\">".stripslashes($sermon->preacher)."</a></span>";
+			echo "\">" . esc_html(stripslashes($sermon->preacher)) . "</a></span>";
 		}
-		if ($date)
-			echo " <span class=\"sermon-date\">".__(' on ', 'sermon-browser').sb_formatted_date ($sermon)."</span>";
+		if (!empty($opt['date'])) {
+			echo " <span class=\"sermon-date\"> " . esc_html__(' on ', 'sermon-browser') . esc_html(sb_formatted_date($sermon)) . "</span>";
+		}
 		echo ".</li>";
 	}
 	echo "</ul>";
-	echo $after_widget;
+	echo ($args['after_widget'] ?? '');
 }
 
-/**
-* Displays the widget options and handles changes
-*
-* @param mixed $widget_args - An array of arguments, or the id number of this widget
-*/
 function sb_widget_sermon_control( $widget_args = 1 ) {
 	global $wpdb, $wp_registered_widgets;
 	static $updated = false;
 
-	$dpreachers = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}sb_preachers ORDER BY id;");
-	$dseries = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}sb_series ORDER BY id;");
-	$dservices = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}sb_services ORDER BY id;");
-
-	if ( is_numeric($widget_args) )
-		$widget_args = array( 'number' => $widget_args );
-	$widget_args = wp_parse_args( $widget_args, array( 'number' => -1 ) );
-	extract( $widget_args, EXTR_SKIP );
-
+	$number = is_array($widget_args) ? ($widget_args['number'] ?? -1) : $widget_args;
 	$options = get_option('sb_widget_sermon');
-	if ( !is_array($options) )
-		$options = array();
+	if ( !is_array($options) ) $options = array();
 
 	if ( !$updated && !empty($_POST['sidebar']) ) {
 		$sidebar = (string) sanitize_text_field($_POST['sidebar']);
 		$sidebars_widgets = wp_get_sidebars_widgets();
-		if ( isset($sidebars_widgets[$sidebar]) )
-			$this_sidebar =& $sidebars_widgets[$sidebar];
-		else
-			$this_sidebar = array();
-		foreach ( $this_sidebar as $_widget_id ) {
-			if ( 'sb_widget_sermon' == $wp_registered_widgets[$_widget_id]['callback'] && isset($wp_registered_widgets[$_widget_id]['params'][0]['number']) ) {
+		$this_sidebar = (isset($sidebars_widgets[$sidebar])) ? $sidebars_widgets[$sidebar] : array();
+		
+		foreach ( (array)$this_sidebar as $_widget_id ) {
+			if ( isset($wp_registered_widgets[$_widget_id]) && 'sb_widget_sermon' == $wp_registered_widgets[$_widget_id]['callback'] ) {
 				$widget_number = $wp_registered_widgets[$_widget_id]['params'][0]['number'];
-				if ( !in_array( "sermon-$widget_number", $_POST['widget-id'] ) )
+				if ( !isset($_POST['widget-id']) || !in_array( "sermon-$widget_number", (array)$_POST['widget-id'] ) ) {
 					unset($options[$widget_number]);
+				}
 			}
 		}
-		foreach ( (array) $_POST['widget-sermon'] as $widget_number => $widget_sermon_instance ) {
-			if ( !isset($widget_sermon_instance['limit']) && isset($options[$widget_number]) )
-				continue;
-			$limit = (int) $widget_sermon_instance['limit'];
-			$preacherz = (int) $widget_sermon_instance['preacherz'];
-			$preacher = (int) $widget_sermon_instance['preacher'];
-			$service = (int) $widget_sermon_instance['service'];
-			$series = (int) $widget_sermon_instance['series'];
-			$book = (int) $widget_sermon_instance['book'];
-			$title = strip_tags(stripslashes($widget_sermon_instance['title']));
-			$date = (int) $widget_sermon_instance['date'];
-			$options[$widget_number] = array( 'limit' => $limit, 'preacherz' => $preacherz, 'book' => $book, 'preacher' => $preacher, 'service' => $service, 'series' => $series, 'title' => $title, 'date' => $date);
+		foreach ( (array) ($_POST['widget-sermon'] ?? []) as $w_num => $inst ) {
+			if ( !isset($inst['limit']) ) continue;
+			$options[$w_num] = array(
+				'limit'     => (int)$inst['limit'],
+				'preacherz' => (int)($inst['preacherz'] ?? 0),
+				'book'      => (int)($inst['book'] ?? 0),
+				'preacher'  => (int)($inst['preacher'] ?? 0),
+				'service'   => (int)($inst['service'] ?? 0),
+				'series'    => (int)($inst['series'] ?? 0),
+				'title'     => sanitize_text_field(stripslashes($inst['title'] ?? '')),
+				'date'      => (int)($inst['date'] ?? 0)
+			);
 		}
 		update_option('sb_widget_sermon', $options);
 		$updated = true;
 	}
 
-	// Display widget form
-	if ( -1 == $number ) {
-		$limit = '';
-		$preacherz = 0;
-		$book = 0;
-		$number = '%i%';
-		$preacher = '';
-		$service = '';
-		$series = '';
-		$title ='';
-		$date = '';
-	} else {
-		$limit = esc_attr($options[$number]['limit']);
-		$preacher = esc_attr($options[$number]['preacher']);
-		$service = esc_attr($options[$number]['service']);
-		$series = esc_attr($options[$number]['series']);
-		$preacherz = (int) $options[$number]['preacherz'];
-		$book = (int) $options[$number]['book'];
-		$title = esc_attr($options[$number]['title']);
-		$date = (int) $options[$number]['date'];
-	}
+	$instance = $options[$number] ?? array();
+	$limit     = esc_attr($instance['limit'] ?? '');
+	$preacher  = (int)($instance['preacher'] ?? 0);
+	$service   = (int)($instance['service'] ?? 0);
+	$series    = (int)($instance['series'] ?? 0);
+	$preacherz = (int)($instance['preacherz'] ?? 0);
+	$book      = (int)($instance['book'] ?? 0);
+	$title     = esc_attr($instance['title'] ?? '');
+	$date      = (int)($instance['date'] ?? 0);
 
+	$dpreachers = $wpdb->get_results("SELECT id, name FROM {$wpdb->prefix}sb_preachers ORDER BY name;");
+	$dseries    = $wpdb->get_results("SELECT id, name FROM {$wpdb->prefix}sb_series ORDER BY name;");
+	$dservices  = $wpdb->get_results("SELECT id, name FROM {$wpdb->prefix}sb_services ORDER BY name;");
 ?>
-		<p><?php _e('Title:'); ?> <input class="widefat" id="widget-sermon-title" name="widget-sermon[<?php echo $number; ?>][title]" type="text" value="<?php echo $title; ?>" /></p>
+		<p><?php _e('Title:'); ?> <input class="widefat" name="widget-sermon[<?php echo esc_attr($number); ?>][title]" type="text" value="<?php echo $title; ?>" /></p>
 		<p>
-			<?php _e('Number of sermons: ', 'sermon-browser') ?><input class="widefat" id="widget-sermon-limit-<?php echo $number; ?>" name="widget-sermon[<?php echo $number; ?>][limit]" type="text" value="<?php echo $limit; ?>" />
+			<?php _e('Number of sermons: ', 'sermon-browser') ?><input class="widefat" name="widget-sermon[<?php echo esc_attr($number); ?>][limit]" type="text" value="<?php echo $limit; ?>" />
 			<hr />
-			<input type="checkbox" id="widget-sermon-preacherz-<?php echo $number ?>" name="widget-sermon[<?php echo $number ?>][preacherz]" <?php echo $preacherz ? 'checked=checked' : '' ?> value="1"> <?php _e('Display preacher', 'sermon-browser') ?><br />
-			<input type="checkbox" id="widget-sermon-book-<?php echo $number ?>" name="widget-sermon[<?php echo $number ?>][book]" <?php echo $book ? 'checked=checked' : '' ?> value="1"> <?php _e('Display bible passage', 'sermon-browser') ?><br />
-			<input type="checkbox" id="widget-sermon-date-<?php echo $number ?>" name="widget-sermon[<?php echo $number ?>][date]" <?php echo $date ? 'checked=checked' : '' ?> value="1"> <?php _e('Display date', 'sermon-browser') ?><br />
+			<label><input type="checkbox" name="widget-sermon[<?php echo esc_attr($number) ?>][preacherz]" <?php checked($preacherz, 1); ?> value="1"> <?php _e('Display preacher', 'sermon-browser') ?></label><br />
+			<label><input type="checkbox" name="widget-sermon[<?php echo esc_attr($number) ?>][book]" <?php checked($book, 1); ?> value="1"> <?php _e('Display bible passage', 'sermon-browser') ?></label><br />
+			<label><input type="checkbox" name="widget-sermon[<?php echo esc_attr($number) ?>][date]" <?php checked($date, 1); ?> value="1"> <?php _e('Display date', 'sermon-browser') ?></label><br />
 			<hr />
 			<table>
 				<tr>
 					<td><?php _e('Preacher: ', 'sermon-browser') ?></td>
 					<td>
-						<select name="widget-sermon[<?php echo $number; ?>][preacher]" id="widget-sermon-preacher-<?php echo $number; ?>">
-							<option value="0" <?php echo $preacher ? '' : 'selected="selected"' ?>><?php _e('[All]', 'sermon-browser') ?></option>
-							<?php foreach ($dpreachers as $cpreacher): ?>
-								<option value="<?php echo $cpreacher->id ?>" <?php echo $preacher == $cpreacher->id ? 'selected="selected"' : '' ?>><?php echo $cpreacher->name ?></option>
+						<select name="widget-sermon[<?php echo esc_attr($number); ?>][preacher]">
+							<option value="0"><?php _e('[All]', 'sermon-browser') ?></option>
+							<?php foreach ((array)$dpreachers as $cp): ?>
+								<option value="<?php echo (int)$cp->id ?>" <?php selected($preacher, $cp->id); ?>><?php echo esc_html($cp->name) ?></option>
 							<?php endforeach ?>
 						</select>
 					</td>
@@ -280,10 +222,10 @@ function sb_widget_sermon_control( $widget_args = 1 ) {
 				<tr>
 					<td><?php _e('Service: ', 'sermon-browser') ?></td>
 					<td>
-						<select name="widget-sermon[<?php echo $number; ?>][service]" id="widget-sermon-service-<?php echo $number; ?>">
-							<option value="0" <?php echo $service ? '' : 'selected="selected"' ?>><?php _e('[All]', 'sermon-browser') ?></option>
-							<?php foreach ($dservices as $cservice): ?>
-								<option value="<?php echo $cservice->id ?>" <?php echo $service == $cservice->id ? 'selected="selected"' : '' ?>><?php echo $cservice->name ?></option>
+						<select name="widget-sermon[<?php echo esc_attr($number); ?>][service]">
+							<option value="0"><?php _e('[All]', 'sermon-browser') ?></option>
+							<?php foreach ((array)$dservices as $cs): ?>
+								<option value="<?php echo (int)$cs->id ?>" <?php selected($service, $cs->id); ?>><?php echo esc_html($cs->name) ?></option>
 							<?php endforeach ?>
 						</select>
 					</td>
@@ -291,17 +233,16 @@ function sb_widget_sermon_control( $widget_args = 1 ) {
 				<tr>
 					<td><?php _e('Series: ', 'sermon-browser') ?></td>
 					<td>
-						<select name="widget-sermon[<?php echo $number; ?>][series]" id="widget-sermon-series-<?php echo $number; ?>">
-							<option value="0" <?php echo $series ? '' : 'selected="selected"' ?>><?php _e('[All]', 'sermon-browser') ?></option>
-							<?php foreach ($dseries as $cseries): ?>
-								<option value="<?php echo $cseries->id ?>" <?php echo $series == $cseries->id ? 'selected="selected"' : '' ?>><?php echo $cseries->name ?></option>
+						<select name="widget-sermon[<?php echo esc_attr($number); ?>][series]">
+							<option value="0"><?php _e('[All]', 'sermon-browser') ?></option>
+							<?php foreach ((array)$dseries as $csr): ?>
+								<option value="<?php echo (int)$csr->id ?>" <?php selected($series, $csr->id); ?>><?php echo esc_html($csr->name) ?></option>
 							<?php endforeach ?>
 						</select>
 					</td>
 				</tr>
 			</table>
-			<input type="hidden" id="widget-sermon-submit-<?php echo $number; ?>" name="widget-sermon[<?php echo $number; ?>][submit]" value="1" />
+			<input type="hidden" name="widget-sermon[<?php echo esc_attr($number); ?>][submit]" value="1" />
 		</p>
 <?php
 }
-?>
