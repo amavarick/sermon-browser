@@ -731,91 +731,90 @@ function sb_get_sermons($filter, $order, $page = 1, $limit = 0, $hide_empty = fa
 * @return string SQL query
 */
 function sb_create_multi_sermon_query ($filter, $order, $page = 1, $limit = 0, $hide_empty = false) {
-    global $wpdb;
-    $default_filter = array(
-        'title' => '',
-        'preacher' => 0,
-        'date' => '',
-        'enddate' => '',
-        'series' => 0,
-        'service' => 0,
-        'book' => '',
-        'tag' => '',
-        'id' => '',
-    );
-    $default_order = array(
-        'by' => 'm.datetime',
-        'dir' => 'desc',
-    );
-    $bs = '';
-    $filter = array_merge($default_filter, (array)$filter);
-    $order = array_merge($default_order, (array)$order);
-    if ( strtolower($order['dir'] ?? '') != 'desc' && strtolower($order['dir'] ?? '') != 'asc' )
-        $order['dir'] = $default_order['dir'];
-    $valid_sortby_values = array( 'm.id', 'm.title', 'm.datetime', 'm.start', 'm.end', 'p.id', 'p.name', 's.id', 's.name', 'ss.id', 'ss.name');
-    if ( !in_array($order['by'], $valid_sortby_values) )
-        $order['by'] = $default_order['by'];
+	global $wpdb;
+	$default_filter = array(
+		'title' => '',
+		'preacher' => 0,
+		'date' => '',
+		'enddate' => '',
+		'series' => 0,
+		'service' => 0,
+		'book' => '',
+		'tag' => '',
+		'id' => '',
+	);
+	$default_order = array(
+		'by' => 'm.datetime',
+		'dir' => 'desc',
+	);
+	$bs = '';
+	$filter = array_merge($default_filter, (array)$filter);
+	$order = array_merge($default_order, (array)$order);
 
-    // === PHP 8+ FIX: Force $page and $limit to int with safe defaults ===
-    $page  = max(1, (int)$page);
-    $limit = (int)$limit;
-    if ($limit <= 0) {
-        $limit = 10; // fallback if still invalid
-    }
-    // =======================================================================
+	// Validate Sort Direction
+	$dir = (strtolower($order['dir'] ?? '') == 'asc') ? 'ASC' : 'DESC';
+	
+	// Validate Sort Column (Whitelist)
+	$valid_sortby = array('m.id', 'm.title', 'm.datetime', 'm.start', 'm.end', 'p.id', 'p.name', 's.id', 's.name', 'ss.id', 'ss.name', 'b.id');
+	$order_by = in_array($order['by'], $valid_sortby) ? $order['by'] : 'm.datetime';
 
-    $cond = '1=1 ';
-    if ($filter['title'] != '') {
-        $cond .= $wpdb->prepare("AND (m.title LIKE %s OR m.description LIKE %s OR t.name LIKE %s) ", '%'.esc_sql($filter['title']).'%', '%'.esc_sql($filter['title']).'%', '%'.esc_sql($filter['title']).'%');
-    }
-    if ($filter['preacher'] != 0) {
-        $cond .= $wpdb->prepare('AND m.preacher_id = %d ', (int) $filter['preacher']);
-    }
-    if ($filter['date'] != '') {
-        $cond .= $wpdb->prepare('AND m.datetime >= %s ', esc_sql($filter['date']));
-    }
-    if ($filter['enddate'] != '') {
-        $cond .= $wpdb->prepare('AND m.datetime <= %s ', esc_sql($filter['enddate']));
-    }
-    if ($filter['series'] != 0) {
-        $cond .= $wpdb->prepare('AND m.series_id = %d ', (int) $filter['series']);
-    }
-    if ($filter['service'] != 0) {
-        $cond .= $wpdb->prepare('AND m.service_id = %d ', (int) $filter['service']);
-    }
-    if ($filter['book'] != '') {
-        $cond .= $wpdb->prepare('AND bs.book_name = %s ', esc_sql($filter['book']));
-    } else {
-        $bs = "AND bs.order = 0 AND bs.type= 'start' ";
-    }
-    if ($filter['tag'] != '') {
-        $cond .= $wpdb->prepare("AND t.name LIKE %s ", '%'.esc_sql($filter['tag']).'%');
-    }
-    if ($filter['id'] != '') {
-        $cond .= $wpdb->prepare("AND m.id = %d ", (int)$filter['id']);
-    }
-    if ($hide_empty) {
-        $cond .= "AND stuff.name != '' ";
-    }
-    $offset = (int)($limit * ($page - 1));
-    $order_by = $order['by'];
-    if ($order_by == 'b.id' ) {
-        $order_by = 'b.id '.esc_sql($order['dir']).', bs.chapter '.esc_sql($order['dir']).', bs.verse';
-    }
-    
-    return "SELECT SQL_CALC_FOUND_ROWS DISTINCT m.id, m.title, m.description, m.datetime, m.time, m.start, m.end, p.id as pid, p.name as preacher, p.description as preacher_description, p.image, s.id as sid, s.name as service, ss.id as ssid, ss.name as series
-FROM {$wpdb->prefix}sb_sermons as m
-LEFT JOIN {$wpdb->prefix}sb_preachers as p ON m.preacher_id = p.id
-LEFT JOIN {$wpdb->prefix}sb_services as s ON m.service_id = s.id
-LEFT JOIN {$wpdb->prefix}sb_series as ss ON m.series_id = ss.id
-LEFT JOIN {$wpdb->prefix}sb_books_sermons as bs ON bs.sermon_id = m.id {$bs}
-LEFT JOIN {$wpdb->prefix}sb_books as b ON bs.book_name = b.name
-LEFT JOIN {$wpdb->prefix}sb_sermons_tags as st ON st.sermon_id = m.id
-LEFT JOIN {$wpdb->prefix}sb_tags as t ON t.id = st.tag_id
-LEFT JOIN {$wpdb->prefix}sb_stuff as stuff ON stuff.sermon_id = m.id
-WHERE {$cond} ORDER BY ". $order_by . " " . esc_sql($order['dir']) . " LIMIT " . (int)$offset . ", " . (int)$limit;
+	// Handle special Bible Book sorting
+	if ($order_by == 'b.id' ) {
+		$order_by = "b.id {$dir}, bs.chapter {$dir}, bs.verse";
+	}
+
+	// PHP 8.5 Strict Type Casting
+	$page  = max(1, (int)$page);
+	$limit = (int)$limit > 0 ? (int)$limit : 10;
+	$offset = (int)($limit * ($page - 1));
+
+	$cond = '1=1 ';
+	if ($filter['title'] != '') {
+		$like = '%' . $wpdb->esc_like($filter['title']) . '%';
+		$cond .= $wpdb->prepare("AND (m.title LIKE %s OR m.description LIKE %s OR t.name LIKE %s) ", $like, $like, $like);
+	}
+	if ($filter['preacher'] != 0) {
+		$cond .= $wpdb->prepare('AND m.preacher_id = %d ', (int) $filter['preacher']);
+	}
+	if ($filter['date'] != '') {
+		$cond .= $wpdb->prepare('AND m.datetime >= %s ', sanitize_text_field($filter['date']));
+	}
+	if ($filter['enddate'] != '') {
+		$cond .= $wpdb->prepare('AND m.datetime <= %s ', sanitize_text_field($filter['enddate']));
+	}
+	if ($filter['series'] != 0) {
+		$cond .= $wpdb->prepare('AND m.series_id = %d ', (int) $filter['series']);
+	}
+	if ($filter['service'] != 0) {
+		$cond .= $wpdb->prepare('AND m.service_id = %d ', (int) $filter['service']);
+	}
+	if ($filter['book'] != '') {
+		$cond .= $wpdb->prepare('AND bs.book_name = %s ', sanitize_text_field($filter['book']));
+	} else {
+		$bs = "AND bs.order = 0 AND bs.type= 'start' ";
+	}
+	if ($filter['tag'] != '') {
+		$cond .= $wpdb->prepare("AND t.name LIKE %s ", '%' . $wpdb->esc_like($filter['tag']) . '%');
+	}
+	if ($filter['id'] != '') {
+		$cond .= $wpdb->prepare("AND m.id = %d ", (int)$filter['id']);
+	}
+	if ($hide_empty) {
+		$cond .= "AND stuff.name != '' ";
+	}
+
+	return $wpdb->prepare("SELECT SQL_CALC_FOUND_ROWS DISTINCT m.id, m.title, m.description, m.datetime, m.time, m.start, m.end, p.id as pid, p.name as preacher, p.description as preacher_description, p.image, s.id as sid, s.name as service, ss.id as ssid, ss.name as series
+		FROM {$wpdb->prefix}sb_sermons as m
+		LEFT JOIN {$wpdb->prefix}sb_preachers as p ON m.preacher_id = p.id
+		LEFT JOIN {$wpdb->prefix}sb_services as s ON m.service_id = s.id
+		LEFT JOIN {$wpdb->prefix}sb_series as ss ON m.series_id = ss.id
+		LEFT JOIN {$wpdb->prefix}sb_books_sermons as bs ON bs.sermon_id = m.id {$bs}
+		LEFT JOIN {$wpdb->prefix}sb_books as b ON bs.book_name = b.name
+		LEFT JOIN {$wpdb->prefix}sb_sermons_tags as st ON st.sermon_id = m.id
+		LEFT JOIN {$wpdb->prefix}sb_tags as t ON t.id = st.tag_id
+		LEFT JOIN {$wpdb->prefix}sb_stuff as stuff ON stuff.sermon_id = m.id
+		WHERE {$cond} ORDER BY {$order_by} {$dir} LIMIT %d, %d", $offset, $limit);
 }
-
 /**
 * Returns the default time for a particular service
 *
