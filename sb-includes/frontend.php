@@ -921,12 +921,15 @@ function sb_url_minus_parameter ($param1, $param2='') {
 }
 
 //Displays the filter on sermon search page
+//Displays the filter on sermon search page
 function sb_print_filters($filter) {
 	global $wpdb, $more_applied, $filter_options, $sermons, $record_count;
 
+	// FIX: Explicitly get the page number from the URL
+	$page = isset($_REQUEST['pagenum']) ? max(1, (int)$_REQUEST['pagenum']) : 1;
+
 	// Only fetch here if the shortcode failed to fetch (Safety Net)
 	if (empty($sermons)) {
-		$page = isset($_REQUEST['pagenum']) ? max(1, (int)$_REQUEST['pagenum']) : 1;
 		$per_page = (int)sb_get_option('sermons_per_page');
 		if ($per_page <= 0) $per_page = 20;
 		
@@ -935,6 +938,7 @@ function sb_print_filters($filter) {
 			'dir' => isset($_REQUEST['dir']) ? sanitize_key($_REQUEST['dir']) : 'desc'
 		);
 		
+		// CRITICAL FIX: Pass the $page variable so Page 2, 3, etc. load data
 		$sermons = sb_get_sermons((array)$filter, $sort_order, $page, $per_page, (bool)sb_get_option('hide_no_attachments'));
 	}
 	
@@ -1127,8 +1131,35 @@ function sb_print_filters($filter) {
 							</td>
 						</tr>
 						<tr>
-							<td colspan="3">&nbsp;</td>
-							<td class="field"><input type="submit" class="filter" value="<?php _e('Filter &raquo;', 'sermon-browser') ?>">			</td>
+							<td colspan="2" style="vertical-align: middle; text-align: left;">
+								<?php 
+								// Reset button logic
+								if (isset($_REQUEST['preacher']) || isset($_REQUEST['service']) || isset($_REQUEST['series']) || isset($_REQUEST['book']) || isset($_REQUEST['title']) || isset($_REQUEST['date']) || isset($_REQUEST['stag'])): 
+								?>
+									<a href="<?php echo esc_url(sb_display_url()); ?>" 
+									   onmouseover="this.style.backgroundColor='#333';" 
+									   onmouseout="this.style.backgroundColor='#1a1a1a';"
+									   style="display: inline-block; 
+											  padding: 10px 22px; 
+											  background-color: #1a1a1a; 
+											  color: #ffffff; 
+											  border: none; 
+											  border-radius: 0px; 
+											  font-family: inherit;
+											  font-size: 16px; 
+											  font-weight: bold; 
+											  text-decoration: none; 
+											  text-transform: uppercase;
+											  line-height: 1.2;
+											  cursor: pointer;
+											  transition: background 0.2s ease;">
+										&laquo; Reset Filters
+									</a>
+								<?php endif; ?>
+							</td>
+							<td class="field" colspan="2" style="text-align:right;">
+								<input type="submit" class="filter" value="<?php _e('Filter &raquo;', 'sermon-browser') ?>" style="padding: 10px 22px; background-color: #1a1a1a; color: #ffffff; border: none; border-radius: 0px; font-weight: bold; text-transform: uppercase; cursor: pointer;">
+							</td>
 						</tr>
 					</table>
 					<input type="hidden" name="pagenum" value="1">
