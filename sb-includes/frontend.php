@@ -1130,35 +1130,29 @@ function sb_print_filters($filter) {
 								</select>
 							</td>
 						</tr>
-						<tr>
-							<td colspan="2" style="vertical-align: middle; text-align: left;">
-								<?php 
-								// Reset button logic
-								if (isset($_REQUEST['preacher']) || isset($_REQUEST['service']) || isset($_REQUEST['series']) || isset($_REQUEST['book']) || isset($_REQUEST['title']) || isset($_REQUEST['date']) || isset($_REQUEST['stag'])): 
-								?>
-									<a href="<?php echo esc_url(sb_display_url()); ?>" 
-									   onmouseover="this.style.backgroundColor='#333';" 
-									   onmouseout="this.style.backgroundColor='#1a1a1a';"
-									   style="display: inline-block; 
-											  padding: 10px 22px; 
-											  background-color: #1a1a1a; 
-											  color: #ffffff; 
-											  border: none; 
-											  border-radius: 0px; 
-											  font-family: inherit;
-											  font-size: 16px; 
-											  font-weight: bold; 
-											  text-decoration: none; 
-											  text-transform: uppercase;
-											  line-height: 1.2;
-											  cursor: pointer;
-											  transition: background 0.2s ease;">
-										&laquo; Reset Filters
-									</a>
-								<?php endif; ?>
-							</td>
-							<td class="field" colspan="2" style="text-align:right;">
-								<input type="submit" class="filter" value="<?php _e('Filter &raquo;', 'sermon-browser') ?>" style="padding: 10px 22px; background-color: #1a1a1a; color: #ffffff; border: none; border-radius: 0px; font-weight: bold; text-transform: uppercase; cursor: pointer;">
+						<tr class="sb-button-row">
+							<td colspan="4" style="padding: 0;">
+								<div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: stretch; width: 100%; padding: 15px 0;">
+									
+									<div style="flex: 1 1 200px; display: flex;">
+										<?php if (isset($_REQUEST['preacher']) || isset($_REQUEST['service']) || isset($_REQUEST['series']) || isset($_REQUEST['book']) || isset($_REQUEST['title']) || isset($_REQUEST['date']) || isset($_REQUEST['stag'])): ?>
+											<a href="<?php echo esc_url(sb_display_url()); ?>" 
+											   onmouseover="this.style.backgroundColor='#333';" 
+											   onmouseout="this.style.backgroundColor='#1a1a1a';"
+											   style="display: flex; align-items: center; justify-content: center; padding: 12px 20px; background-color: #1a1a1a; color: #ffffff; border: none; font-size: 15px; font-weight: bold; text-decoration: none; text-transform: uppercase; width: 100%; box-sizing: border-box; transition: background 0.2s ease; text-align: center;">
+												&laquo; Reset Filters
+											</a>
+										<?php endif; ?>
+									</div>
+
+									<div style="flex: 1 1 200px; display: flex;">
+										<input type="submit" class="filter" value="FILTER &raquo;" 
+											   onmouseover="this.style.backgroundColor='#333';" 
+											   onmouseout="this.style.backgroundColor='#1a1a1a';"
+											   style="display: block; padding: 12px 20px; background-color: #1a1a1a; color: #ffffff; border: none; font-size: 15px; font-weight: bold; text-transform: uppercase; width: 100%; box-sizing: border-box; cursor: pointer; transition: background 0.2s ease;">
+									</div>
+									
+								</div>
 							</td>
 						</tr>
 					</table>
