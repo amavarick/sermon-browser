@@ -645,25 +645,39 @@ function sb_print_tag_clouds($minfont=80, $maxfont=150) {
 	echo implode(' ', $out);
 }
 
-//Prints link to next page
-function sb_print_next_page_link($limit = 0) {
+/**
+* Displays the 'Next page' link
+*/
+function sb_print_next_page_link() {
 	global $record_count;
-	if ($limit == 0)
-		$limit = (int)sb_get_option('sermons_per_page');
-	$current = isset($_REQUEST['pagenum']) ? (int) $_REQUEST['pagenum'] : 1;
-	if ($current < ceil($record_count / $limit)) {
-		$url = sb_build_url(array('pagenum' => ++$current), false);
-		echo '<a href="'.esc_url($url).'">'.__('Next page', 'sermon-browser').' &raquo;</a>';
+	
+	// DYNAMIC: Respects your Admin "Sermons per page" setting
+	$per_page = (int)sb_get_option('sermons_per_page');
+	if ($per_page <= 0) $per_page = 10;
+	
+	$page = isset($_REQUEST['pagenum']) ? max(1, (int)$_REQUEST['pagenum']) : 1;
+
+	// Only show "Next" if total sermons found is greater than current display
+	if ($record_count > ($page * $per_page)) {
+		$next_page = $page + 1;
+		echo '<a href="' . esc_url(add_query_arg('pagenum', $next_page)) . '">' . __('Next page', 'sermon-browser') . ' &raquo;</a>';
 	}
 }
 
-//Prints link to previous page
-function sb_print_prev_page_link($limit = 0) {
-	if ($limit == 0) $limit = (int)sb_get_option('sermons_per_page');
-	$current = isset($_REQUEST['pagenum']) ? (int) $_REQUEST['pagenum'] : 1;
-	if ($current > 1) {
-		$url = sb_build_url(array('pagenum' => --$current), false);
-		echo '<a href="'.esc_url($url).'">'.__('Previous page', 'sermon-browser').'</a>';
+/**
+* Displays the 'Previous page' link
+*/
+function sb_print_prev_page_link() {
+	$page = isset($_REQUEST['pagenum']) ? (int)$_REQUEST['pagenum'] : 1;
+
+	if ($page > 1) {
+		$prev_page = $page - 1;
+		// If going back to page 1, we remove the pagenum arg for a cleaner URL
+		if ($prev_page == 1) {
+			echo '<a href="' . esc_url(remove_query_arg('pagenum')) . '">&laquo; ' . __('Previous page', 'sermon-browser') . '</a>';
+		} else {
+			echo '<a href="' . esc_url(add_query_arg('pagenum', $prev_page)) . '">&laquo; ' . __('Previous page', 'sermon-browser') . '</a>';
+		}
 	}
 }
 
