@@ -17,6 +17,11 @@ function sb_display_sermons($options = array()) {
 	);
 	$options = array_merge($default, (array) $options);
 	extract($options);
+
+	// PHP 8.5 Fix: Ensure filter variables are initialized for immediate rendering
+	$preacher = (int)($preacher ?? 0);
+	$service = (int)($service ?? 0);
+	$series = (int)($series ?? 0);
 	if ($url_only == 1)
 		$limit = 1;
 	$sermons = sb_get_sermons(array(
@@ -55,15 +60,26 @@ function sb_display_sermons($options = array()) {
 
 // Displays the widget
 function sb_widget_sermon($args, $widget_args=1) {
-	extract( $args, EXTR_SKIP );
+	extract( (array)$args, EXTR_SKIP );
 	if ( is_numeric($widget_args) )
 		$widget_args = array( 'number' => $widget_args );
 	$widget_args = wp_parse_args( $widget_args, array( 'number' => -1 ) );
-	extract( $widget_args, EXTR_SKIP );
+	extract( (array)$widget_args, EXTR_SKIP );
 	$options = sb_get_option('sermons_widget_options');
 	if ( !isset($options[$number]) )
 		return;
-	extract($options[$number]);
+
+	// PHP 8.5 Fix: Prevent initialization failure by ensuring keys exist
+	$instance = $options[$number];
+	$preacher = (int)($instance['preacher'] ?? 0);
+	$service  = (int)($instance['service'] ?? 0);
+	$series   = (int)($instance['series'] ?? 0);
+	$limit    = (int)($instance['limit'] ?? 5);
+	$title    = $instance['title'] ?? '';
+	$book     = $instance['book'] ?? 0;
+	$preacherz = $instance['preacherz'] ?? 0;
+	$date     = $instance['date'] ?? 0;
+
 	echo $before_widget;
 	echo $before_title . esc_html($title) . $after_title;
 	$sermons = sb_get_sermons(array(
